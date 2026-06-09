@@ -99,11 +99,14 @@ function arr(x) {
    of completed matches per competition. */
 async function buildLivePool({ maxComps = 6, matchesPerComp = 8, onProgress }) {
   const cat = await poolFetch(`${API}/data/competitions.json`);
-  let comps = arr(cat?.competitionDetails?.competition).filter((c) =>
-    String(c.name || "").toLowerCase().includes("nrl") ||
-    String(c.name || "").toLowerCase().includes("premiership") ||
-    String(c.name || "").toLowerCase().includes("origin")
-  );
+  let comps = arr(cat?.competitionDetails?.competition).filter((c) => {
+    const n = String(c.name || "").toLowerCase();
+    // "nrl" also catches "NRLW"; "origin" catches State of Origin.
+    // Deliberately NOT matching bare "premiership" — the Champion Data
+    // catalogue is shared across sports and that keyword pulls in the
+    // netball ANZ Premiership, which would pollute an NRL draft pool.
+    return n.includes("nrl") || n.includes("origin");
+  });
   if (!comps.length) comps = arr(cat?.competitionDetails?.competition);
   // newest seasons first, capped
   comps.sort((a, b) => (b.season || 0) - (a.season || 0));
