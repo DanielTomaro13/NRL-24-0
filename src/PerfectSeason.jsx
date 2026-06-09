@@ -56,6 +56,27 @@ const POSITIONS = [
   { code: "LK", name: "Lock", n: 13 },
 ];
 
+// Champion Data's `position` string → our team-sheet code. "Interchange"
+// has no fixed slot, so it's resolved to a player's most common starting
+// position elsewhere; a pure-bench player falls back to Lock (utility fwd).
+const POS_NAME_TO_CODE = {
+  Fullback: "FB",
+  Wing: "WG",
+  Centre: "CE",
+  "Five-Eighth": "FE",
+  "Five-eighth": "FE",
+  Halfback: "HB",
+  Prop: "PR",
+  Hooker: "HK",
+  "Second Row": "2R",
+  "Second-Row": "2R",
+  Lock: "LK",
+};
+const POS_CODE_LABEL = {
+  FB: "Fullback", WG: "Wing", CE: "Centre", FE: "Five-Eighth",
+  HB: "Halfback", PR: "Prop", HK: "Hooker", "2R": "Second Row", LK: "Lock",
+};
+
 
 
 /* ---------- rating model from raw per-match averages ----------------- */
@@ -97,7 +118,7 @@ function arr(x) {
 /* Walk the live feeds and aggregate a player pool. Bounded so it never
    hammers the CDN: a capped number of competitions, and a capped number
    of completed matches per competition. */
-async function buildLivePool({ maxComps = 30, matchesPerComp = 8, onProgress }) {
+async function buildLivePool({ maxComps = 30, matchesPerComp = 20, onProgress }) {
   const cat = await poolFetch(`${API}/data/competitions.json`);
   // Men's NRL Premiership only — every season is named ".. NRL Premiership"
   // (e.g. "2026 Telstra NRL Premiership", "2014 NRL Premiership"). Matching
@@ -171,10 +192,13 @@ async function buildLivePool({ maxComps = 30, matchesPerComp = 8, onProgress }) 
             era: String(comp.season || ""),
             sums: {},
             games: 0,
+            posCounts: {}, // tally of named starting positions across games
           });
         }
         const rec = agg.get(key);
         rec.games += 1;
+        const code = POS_NAME_TO_CODE[String(p.position || "").trim()];
+        if (code) rec.posCounts[code] = (rec.posCounts[code] || 0) + 1;
         ["tries", "runMetres", "lineBreaks", "tryAssists", "tackles", "offloads", "handlingErrors"].forEach(
           (k) => {
             rec.sums[k] = (rec.sums[k] || 0) + (Number(p[k]) || 0);
@@ -191,11 +215,16 @@ async function buildLivePool({ maxComps = 30, matchesPerComp = 8, onProgress }) 
     if (rec.games < 1) continue;
     const avg = {};
     Object.keys(rec.sums).forEach((k) => (avg[k] = rec.sums[k] / rec.games));
+    // primary position = most-played named position; pure bench → Lock
+    const pos =
+      Object.entries(rec.posCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "LK";
     pool.push({
       id: rec.id,
       name: rec.name,
       club: rec.club,
       era: rec.era,
+      pos,
+      posName: POS_CODE_LABEL[pos] || "Lock",
       rating: rateFromStats(avg),
       tries: +(avg.tries || 0).toFixed(1),
       runMetres: Math.round(avg.runMetres || 0),
@@ -239,7 +268,7 @@ export default function PerfectSeason() {
   const [spinning, setSpinning] = useState(false);
   const [clubReroll, setClubReroll] = useState(true); // 1 per game
   const [eraReroll, setEraReroll] = useState(true); // 1 per game
-  const [pending, setPending] = useState(null); // player chosen, awaiting a slot
+  const [notice, setNotice] = useState(null); // transient "position full" message
   const reelTimer = useRef(null);
 
   const firstEmpty = squad.findIndex((s) => !s);
@@ -378,24 +407,32 @@ export default function PerfectSeason() {
     animateTo({ club: reels.club, era: rnd(es) }, true);
   }
 
-  // tapping a player stages them; the user then chooses any empty slot
-  function choose(player) {
-    setPending(player);
-  }
+  // is a player's natural position full? (counts every slot of that code)
+  const positionFull = useCallback(
+    (code) => !POSITIONS.some((pos, i) => pos.code === code && !squad[i]),
+    [squad]
+  );
 
-  function assign(slotIndex) {
-    if (!pending || squad[slotIndex]) return;
+  // drafting a player drops them into their own position; if every slot for
+  // that position is taken, the pick is blocked and the user picks another.
+  function draft(player) {
+    if (spinning || done) return;
+    const slot = POSITIONS.findIndex(
+      (pos, i) => pos.code === player.pos && !squad[i]
+    );
+    if (slot === -1) {
+      setNotice(
+        `${POS_CODE_LABEL[player.pos] || "That position"} is full — draft a different player.`
+      );
+      return;
+    }
     setSquad((sq) => {
       const next = sq.slice();
-      next[slotIndex] = { ...pending, pos: POSITIONS[slotIndex] };
+      next[slot] = { ...player };
       return next;
     });
-    setPending(null);
+    setNotice(null);
     setReels({ club: null, era: null });
-  }
-
-  function cancelPending() {
-    setPending(null);
   }
 
   function clearSlot(slotIndex) {
@@ -411,7 +448,7 @@ export default function PerfectSeason() {
     setReels({ club: null, era: null });
     setClubReroll(true);
     setEraReroll(true);
-    setPending(null);
+    setNotice(null);
   }
 
   const filled = squad.filter(Boolean);
@@ -482,13 +519,7 @@ export default function PerfectSeason() {
               <>
                 <div style={S.panelHead}>
                   <span style={S.pill}>{picksMade} / 13 DRAFTED</span>
-                  <span style={S.posBig}>
-                    {pending ? (
-                      <span style={{ color: C.flare }}>choose a slot →</span>
-                    ) : (
-                      "SPIN & DRAFT"
-                    )}
-                  </span>
+                  <span style={S.posBig}>SPIN &amp; DRAFT</span>
                 </div>
 
                 <div style={S.reelWrap}>
@@ -529,20 +560,16 @@ export default function PerfectSeason() {
                   )}
                 </div>
 
-                {pending && (
-                  <div style={S.pendingBar}>
-                    <span style={S.candRating(pending.rating)}>{pending.rating}</span>
-                    <span style={S.pendingText}>
-                      <b>{pending.name}</b> is ready — tap an empty position on the team
-                      sheet to slot them in.
-                    </span>
-                    <button style={S.pendingCancel} onClick={cancelPending}>
+                {notice && (
+                  <div style={S.noticeBar}>
+                    <span style={S.noticeText}>{notice}</span>
+                    <button style={S.pendingCancel} onClick={() => setNotice(null)}>
                       ✕
                     </button>
                   </div>
                 )}
 
-                {reels.club && !spinning && !pending && (
+                {reels.club && !spinning && (
                   <div style={S.candWrap}>
                     <div style={S.candHead}>
                       <b style={{ color: C.chalk }}>{reels.club}</b>
@@ -556,18 +583,32 @@ export default function PerfectSeason() {
                     ) : (
                       <div style={S.candScroll}>
                         <div style={S.candList}>
-                          {candidates.map((p) => (
-                            <button key={p.id} style={S.cand} onClick={() => choose(p)}>
-                              <span style={S.candRating(p.rating)}>{p.rating}</span>
-                              <span style={S.candMain}>
-                                <span style={S.candName}>{p.name}</span>
-                                <span style={S.candStats}>
-                                  {p.tries}T · {p.runMetres}m · {p.tryAssists}TA · {p.tackles}tk
+                          {candidates.map((p) => {
+                            const full = positionFull(p.pos);
+                            return (
+                              <button
+                                key={p.id}
+                                style={{ ...S.cand, ...(full ? S.candFull : null) }}
+                                onClick={() => draft(p)}
+                                disabled={full}
+                                title={full ? `${p.posName} is already full` : ""}
+                              >
+                                <span style={S.candRating(p.rating)}>{p.rating}</span>
+                                <span style={S.candMain}>
+                                  <span style={S.candName}>
+                                    {p.name}
+                                    <span style={S.candPos}>{p.pos}</span>
+                                  </span>
+                                  <span style={S.candStats}>
+                                    {p.tries}T · {p.runMetres}m · {p.tryAssists}TA · {p.tackles}tk
+                                  </span>
                                 </span>
-                              </span>
-                              <span style={S.candPick}>SELECT →</span>
-                            </button>
-                          ))}
+                                <span style={S.candPick}>
+                                  {full ? `${p.pos} FULL` : `DRAFT · ${p.pos} →`}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -577,11 +618,12 @@ export default function PerfectSeason() {
                   </div>
                 )}
 
-                {!reels.club && !pending && (
+                {!reels.club && (
                   <div style={S.hint}>
-                    Hit <b>SPIN</b> to roll a random club and era, then draft any player
-                    from their list into any open position. You get one club re-roll and
-                    one era re-roll for the whole game.
+                    Hit <b>SPIN</b> to roll a random club and era, then draft a player —
+                    they slot straight into their own position. If that position's already
+                    filled you'll have to pick someone else. One club re-roll and one era
+                    re-roll for the whole game.
                   </div>
                 )}
               </>
@@ -601,17 +643,8 @@ export default function PerfectSeason() {
             <ol style={S.sheetList}>
               {POSITIONS.map((pos, i) => {
                 const p = squad[i];
-                const slottable = pending && !p && !done;
                 return (
-                  <li
-                    key={i}
-                    onClick={() => slottable && assign(i)}
-                    style={{
-                      ...S.row,
-                      ...(slottable ? S.rowSlottable : null),
-                      cursor: slottable ? "pointer" : "default",
-                    }}
-                  >
+                  <li key={i} style={S.row}>
                     <span style={S.rowNum}>{pos.n}</span>
                     <span style={S.rowPos}>{pos.code}</span>
                     <span style={S.rowName}>
@@ -623,8 +656,6 @@ export default function PerfectSeason() {
                             {p.era ? ` · ${p.era}` : ""}
                           </span>
                         </>
-                      ) : slottable ? (
-                        <span style={{ color: C.flare }}>tap to slot {pending.name}</span>
                       ) : (
                         <span style={{ color: C.line }}>—</span>
                       )}
@@ -896,7 +927,7 @@ const S = {
   candScroll: { maxHeight: 340, overflowY: "auto", paddingRight: 4, marginRight: -4 },
   empty: { fontSize: 13, color: C.chalkDim, fontStyle: "italic", padding: "10px 0" },
   hint: { marginTop: 22, fontSize: 13, color: C.chalkDim, lineHeight: 1.6, textAlign: "center", padding: "0 10px" },
-  pendingBar: {
+  noticeBar: {
     marginTop: 16,
     display: "flex",
     alignItems: "center",
@@ -906,7 +937,7 @@ const S = {
     borderRadius: 5,
     padding: "12px 14px",
   },
-  pendingText: { flex: 1, fontSize: 13, color: C.chalk, lineHeight: 1.45 },
+  noticeText: { flex: 1, fontSize: 13, color: C.chalk, lineHeight: 1.45 },
   pendingCancel: {
     background: "none",
     border: "none",
@@ -939,9 +970,20 @@ const S = {
     color: r >= 90 ? C.gold : r >= 80 ? C.chalk : C.chalkDim,
   }),
   candMain: { flex: 1, display: "flex", flexDirection: "column", minWidth: 0 },
-  candName: { fontSize: 14.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  candName: { fontSize: 14.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 7, minWidth: 0 },
+  candPos: {
+    fontFamily: mono,
+    fontSize: 9.5,
+    letterSpacing: "0.1em",
+    color: C.gold,
+    border: `1px solid ${C.gold}55`,
+    borderRadius: 3,
+    padding: "1px 5px",
+    flexShrink: 0,
+  },
   candStats: { fontFamily: mono, fontSize: 10.5, color: C.chalkDim, marginTop: 2 },
-  candPick: { fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: C.flare },
+  candPick: { fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: C.flare, whiteSpace: "nowrap" },
+  candFull: { opacity: 0.4, cursor: "not-allowed", filter: "grayscale(0.6)" },
 
   sheet: {
     background: "rgba(255,255,255,0.025)",
