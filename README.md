@@ -33,12 +33,14 @@ A workflow at `.github/workflows/deploy.yml` builds and publishes `dist/` to Pag
 
 ### CORS / the proxy
 
-The browser fetches the Champion Data feeds directly. If the host serves them with permissive CORS headers, GitHub Pages works as-is. If not, the app will show "Feed unavailable" — deploy to **Netlify** or **Vercel** instead, which include a same-origin proxy:
+The browser fetches the Champion Data feeds directly. The CDN serves them with `Access-Control-Allow-Origin: *`, so **GitHub Pages works as-is — no proxy required.**
+
+A same-origin proxy is included as a fallback in case that ever changes:
 
 - `netlify.toml` / `vercel.json` forward `/cd/*` → `https://mc.championdata.com/*` server-side.
 - Set the build env var `VITE_API_BASE=/cd` so the app calls the proxy instead of the CDN directly.
 
-GitHub Pages is static-only and can't run a proxy, so use Netlify/Vercel if you hit CORS.
+GitHub Pages is static-only and can't run a proxy, so if the CDN ever locks down CORS, host on Netlify/Vercel with `VITE_API_BASE=/cd`.
 
 ## Notes
 
