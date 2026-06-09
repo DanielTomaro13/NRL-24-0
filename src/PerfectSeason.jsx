@@ -310,8 +310,11 @@ async function buildLivePool({ maxComps = 30, matchesPerComp = Infinity, concurr
 const rnd = (a) => a[Math.floor(Math.random() * a.length)];
 
 function recordFromRating(avg) {
-  // avg rating 60..99 -> wins out of 24 home-and-away rounds
-  const t = (avg - 62) / (97 - 62); // 0..1
+  // Map squad average -> wins out of 24. Because players draft near-optimally,
+  // real squad averages cluster ~88-92, so a wide 62..97 band flattened every
+  // record to ~19-20. This steeper 75..95 band spreads that cluster across the
+  // ladder: avg 85 ≈ 12 wins, 90 ≈ 18, 95 ≈ 24, with a steep fall below 80.
+  const t = (avg - 75) / (95 - 75); // 0..1
   const wins = Math.round(Math.max(0, Math.min(1, t)) * 24);
   return { wins, losses: 24 - wins };
 }
