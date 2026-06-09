@@ -97,18 +97,18 @@ function arr(x) {
 /* Walk the live feeds and aggregate a player pool. Bounded so it never
    hammers the CDN: a capped number of competitions, and a capped number
    of completed matches per competition. */
-async function buildLivePool({ maxComps = 6, matchesPerComp = 8, onProgress }) {
+async function buildLivePool({ maxComps = 30, matchesPerComp = 8, onProgress }) {
   const cat = await poolFetch(`${API}/data/competitions.json`);
-  let comps = arr(cat?.competitionDetails?.competition).filter((c) => {
-    const n = String(c.name || "").toLowerCase();
-    // "nrl" also catches "NRLW"; "origin" catches State of Origin.
-    // Deliberately NOT matching bare "premiership" — the Champion Data
-    // catalogue is shared across sports and that keyword pulls in the
-    // netball ANZ Premiership, which would pollute an NRL draft pool.
-    return n.includes("nrl") || n.includes("origin");
-  });
-  if (!comps.length) comps = arr(cat?.competitionDetails?.competition);
-  // newest seasons first, capped
+  // Men's NRL Premiership only — every season is named ".. NRL Premiership"
+  // (e.g. "2026 Telstra NRL Premiership", "2014 NRL Premiership"). Matching
+  // the phrase "nrl premiership" gives exactly one comp per season 2014→now
+  // and cleanly excludes NRLW, State of Origin, Women's, and the shared
+  // catalogue's other sports (e.g. the netball ANZ Premiership). No fallback
+  // to the full catalogue — if this matches nothing, the caller surfaces it.
+  let comps = arr(cat?.competitionDetails?.competition).filter((c) =>
+    String(c.name || "").toLowerCase().includes("nrl premiership")
+  );
+  // newest seasons first, capped (the cap is generous — all NRL seasons fit)
   comps.sort((a, b) => (b.season || 0) - (a.season || 0));
   comps = comps.slice(0, maxComps);
 
@@ -133,13 +133,18 @@ async function buildLivePool({ maxComps = 6, matchesPerComp = 8, onProgress }) {
     const step = Math.max(1, Math.floor(matches.length / matchesPerComp));
     const sample = matches.filter((_, i) => i % step === 0).slice(0, matchesPerComp);
 
-    for (const m of sample) {
-      let mf;
-      try {
-        mf = await poolFetch(`${API}/data/${comp.id}/${m.matchId}.json`);
-      } catch {
-        continue;
-      }
+    // fetch this season's sampled match files concurrently, then fold in
+    const files = await Promise.all(
+      sample.map((m) =>
+        poolFetch(`${API}/data/${comp.id}/${m.matchId}.json`)
+          .then((mf) => ({ m, mf }))
+          .catch(() => null)
+      )
+    );
+
+    for (const entry of files) {
+      if (!entry) continue;
+      const { m, mf } = entry;
       const ms = mf?.matchStats || {};
       const squads = {};
       arr(ms?.teamInfo?.team).forEach((t) => {
@@ -150,7 +155,10 @@ async function buildLivePool({ maxComps = 6, matchesPerComp = 8, onProgress }) {
         names[p.playerId] = [p.firstname, p.surname].filter(Boolean).join(" ").trim();
       });
       arr(ms?.playerStats?.player).forEach((p) => {
-        const key = p.playerId;
+        // key per player-SEASON so each era is its own draftable card:
+        // 2016 and 2020 of the same player are distinct entries, and the
+        // club is whoever they suited up for that season.
+        const key = `${p.playerId}-${comp.season}`;
         const club =
           squads[p.squadId] ||
           (p.squadId === m.homeSquadId ? m.homeSquadName : m.awaySquadName) ||
@@ -158,7 +166,7 @@ async function buildLivePool({ maxComps = 6, matchesPerComp = 8, onProgress }) {
         if (!agg.has(key)) {
           agg.set(key, {
             id: `live-${key}`,
-            name: names[key] || `Player ${key}`,
+            name: names[key] || names[p.playerId] || `Player ${p.playerId}`,
             club,
             era: String(comp.season || ""),
             sums: {},
@@ -253,7 +261,9 @@ export default function PerfectSeason() {
         if (!live) return;
         if (p && p.length >= 26) {
           p.sort((a, b) => b.rating - a.rating);
-          setPool(p.slice(0, 600));
+          // keep the whole pool — every season/club combo stays spinnable
+          // (each player-season is one entry, so this is a few thousand max)
+          setPool(p.slice(0, 8000));
           setSource("live");
         } else {
           // reached the CDN but couldn't assemble a usable pool
