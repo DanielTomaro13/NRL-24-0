@@ -355,7 +355,6 @@ export default function PerfectSeason() {
   const animateTo = useCallback(
     (target, lockClub) => {
       setSpinning(true);
-      setPending(null);
       let ticks = 0;
       const maxTicks = 14 + Math.floor(Math.random() * 8);
       clearInterval(reelTimer.current);
