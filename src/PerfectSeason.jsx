@@ -40,7 +40,9 @@ const C = {
   loss: "#ff5436",
 };
 
-const POSITIONS = [
+// Full 1–13 starting line-up: two wings, two centres, two props, two
+// second-rowers, exactly as a real team sheet reads.
+const POSITIONS_FULL = [
   { code: "FB", name: "Fullback", n: 1 },
   { code: "WG", name: "Wing", n: 2 },
   { code: "CE", name: "Centre", n: 3 },
@@ -55,6 +57,24 @@ const POSITIONS = [
   { code: "2R", name: "Second Row", n: 12 },
   { code: "LK", name: "Lock", n: 13 },
 ];
+
+// Quick game: one player for each of the nine distinct positions.
+const POSITIONS_QUICK = [
+  { code: "FB", name: "Fullback", n: 1 },
+  { code: "WG", name: "Wing", n: 2 },
+  { code: "CE", name: "Centre", n: 3 },
+  { code: "FE", name: "Five-Eighth", n: 4 },
+  { code: "HB", name: "Halfback", n: 5 },
+  { code: "HK", name: "Hooker", n: 6 },
+  { code: "PR", name: "Prop", n: 7 },
+  { code: "2R", name: "Second Row", n: 8 },
+  { code: "LK", name: "Lock", n: 9 },
+];
+
+const MODES = {
+  quick: { positions: POSITIONS_QUICK, label: "Quick Nine", count: 9 },
+  full: { positions: POSITIONS_FULL, label: "Full Line-up", count: 13 },
+};
 
 // Champion Data's `position` string → our team-sheet code. "Interchange"
 // has no fixed slot, so it's resolved to a player's most common starting
@@ -79,30 +99,57 @@ const POS_CODE_LABEL = {
 
 
 
-/* ---------- rating model from raw per-match averages ----------------- */
-/* Weighted blend of attacking + workhorse output, mapped through a
-   sigmoid so most players land in a believable 64–92 band and only
-   genuine outliers push toward the high 90s.                            */
+/* ---------- rating model: official 2026 fantasy point scoring --------- */
+/* Every stat the match-centre exposes is folded in using the published
+   "8.3 THE POINTS" values, so a rating reflects a player's real per-game
+   fantasy output rather than a handful of cherry-picked categories. The
+   averaged points are then mapped through a sigmoid into a 60–99 band.
+   (A few scoring lines — 6-again, turnovers, escape-in-goal — have no
+   dedicated feed field and are simply omitted.)                          */
+
+// every player-stat field we sum so the average is available to scoreFantasy
+const STAT_KEYS = [
+  "tries", "conversions", "penaltyGoals", "fieldGoals", "tryAssists",
+  "lineBreaks", "lineBreakAssists", "tackles", "tackleBreaks", "missedTackles",
+  "offloads", "errors", "fortyTwenty", "metresGained", "kickMetres",
+  "penaltiesConceded", "sinBins", "sentOffs", "trySaves", "bombKicksCaught",
+  "runMetres", // kept for the candidate-card stat line
+];
+
+// per-game fantasy points from averaged stats (linear, so averaging is exact
+// apart from the metre divisors, where rounding the average is close enough)
+function scoreFantasy(s) {
+  const g = (k) => Number(s[k]) || 0;
+  return (
+    g("tries") * 8 +
+    (g("conversions") + g("penaltyGoals")) * 2 + // goals
+    g("fieldGoals") * 5 +
+    g("tryAssists") * 5 +
+    g("lineBreaks") * 4 +
+    g("lineBreakAssists") * 2 +
+    g("tackles") * 1 +
+    g("tackleBreaks") * 2 +
+    g("missedTackles") * -2 +
+    g("offloads") * 3 + // feed doesn't split to-hand (4) vs to-ground (2)
+    g("errors") * -2 +
+    g("fortyTwenty") * 4 +
+    Math.floor(g("metresGained") / 10) +
+    Math.floor(g("kickMetres") / 30) +
+    g("penaltiesConceded") * -2 +
+    g("sinBins") * -5 +
+    g("sentOffs") * -10 +
+    g("trySaves") * 5 +
+    g("bombKicksCaught") * 1 // kicks defused
+  );
+}
+
 function rateFromStats(s) {
-  const tries = s.tries || 0;
-  const rm = s.runMetres || 0;
-  const lb = s.lineBreaks || 0;
-  const ta = s.tryAssists || 0;
-  const tk = s.tackles || 0;
-  const off = s.offloads || 0;
-  const err = s.handlingErrors || 0;
-  const raw =
-    tries * 6 +
-    rm * 0.14 +
-    lb * 6 +
-    ta * 7 +
-    tk * 0.55 +
-    off * 2 -
-    err * 3;
-  // sigmoid: center ~58 raw -> 0.5; spread 16 raw per logit
-  const t = 1 / (1 + Math.exp(-(raw - 58) / 16));
-  const r = 62 + t * 36; // 62..98
-  return Math.round(Math.min(98, Math.max(60, r)));
+  const fp = scoreFantasy(s);
+  // calibrated on live data: median starter ~32 fp/game, p90 ~58.
+  // center 30, spread 17 -> median ~82, p90 ~93, elite -> high 90s.
+  const t = 1 / (1 + Math.exp(-(fp - 30) / 17));
+  const r = 62 + t * 37; // 62..99
+  return Math.round(Math.min(99, Math.max(60, r)));
 }
 
 function poolFetch(url) {
@@ -115,10 +162,29 @@ function arr(x) {
   return Array.isArray(x) ? x : x == null ? [] : [x];
 }
 
+// run async `fn` over `items` with a bounded number in flight, reporting
+// progress as each settles. Lets us pull *every* match without opening
+// hundreds of sockets at once.
+async function mapLimit(items, limit, fn, onEach) {
+  const out = new Array(items.length);
+  let i = 0;
+  let finished = 0;
+  async function worker() {
+    while (i < items.length) {
+      const idx = i++;
+      out[idx] = await fn(items[idx], idx);
+      finished++;
+      onEach?.(finished, items.length);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
 /* Walk the live feeds and aggregate a player pool. Bounded so it never
    hammers the CDN: a capped number of competitions, and a capped number
    of completed matches per competition. */
-async function buildLivePool({ maxComps = 30, matchesPerComp = 20, onProgress }) {
+async function buildLivePool({ maxComps = 30, matchesPerComp = Infinity, concurrency = 12, onProgress }) {
   const cat = await poolFetch(`${API}/data/competitions.json`);
   // Men's NRL Premiership only — every season is named ".. NRL Premiership"
   // (e.g. "2026 Telstra NRL Premiership", "2014 NRL Premiership"). Matching
@@ -150,17 +216,23 @@ async function buildLivePool({ maxComps = 30, matchesPerComp = 20, onProgress })
     const matches = arr(fixture?.fixture?.match).filter(
       (m) => /full time|complete|final/i.test(m.matchStatus || "")
     );
-    // sample across the season rather than only round 1
-    const step = Math.max(1, Math.floor(matches.length / matchesPerComp));
-    const sample = matches.filter((_, i) => i % step === 0).slice(0, matchesPerComp);
+    // pull every completed match in the season (capped only by matchesPerComp,
+    // which defaults to Infinity) so each player's rating uses their full sample
+    const sample =
+      matches.length > matchesPerComp ? matches.slice(0, matchesPerComp) : matches;
 
-    // fetch this season's sampled match files concurrently, then fold in
-    const files = await Promise.all(
-      sample.map((m) =>
+    // fetch the season's match files with bounded concurrency, folding each in
+    const files = await mapLimit(
+      sample,
+      concurrency,
+      (m) =>
         poolFetch(`${API}/data/${comp.id}/${m.matchId}.json`)
           .then((mf) => ({ m, mf }))
-          .catch(() => null)
-      )
+          .catch(() => null),
+      (fin, tot) => {
+        const frac = (done + fin / tot) / total;
+        onProgress?.(`Reading ${comp.name} — ${fin}/${tot} matches…`, frac);
+      }
     );
 
     for (const entry of files) {
@@ -199,11 +271,9 @@ async function buildLivePool({ maxComps = 30, matchesPerComp = 20, onProgress })
         rec.games += 1;
         const code = POS_NAME_TO_CODE[String(p.position || "").trim()];
         if (code) rec.posCounts[code] = (rec.posCounts[code] || 0) + 1;
-        ["tries", "runMetres", "lineBreaks", "tryAssists", "tackles", "offloads", "handlingErrors"].forEach(
-          (k) => {
-            rec.sums[k] = (rec.sums[k] || 0) + (Number(p[k]) || 0);
-          }
-        );
+        STAT_KEYS.forEach((k) => {
+          rec.sums[k] = (rec.sums[k] || 0) + (Number(p[k]) || 0);
+        });
       });
     }
     done++;
@@ -263,7 +333,8 @@ export default function PerfectSeason() {
   const [reloadKey, setReloadKey] = useState(0);
   const [progress, setProgress] = useState({ msg: "Connecting to the match centre…", p: 0 });
 
-  const [squad, setSquad] = useState(() => POSITIONS.map(() => null));
+  const [mode, setMode] = useState(null); // null until the player picks quick/full
+  const [squad, setSquad] = useState([]);
   const [reels, setReels] = useState({ club: null, era: null });
   const [spinning, setSpinning] = useState(false);
   const [clubReroll, setClubReroll] = useState(true); // 1 per game
@@ -271,8 +342,12 @@ export default function PerfectSeason() {
   const [notice, setNotice] = useState(null); // transient "position full" message
   const reelTimer = useRef(null);
 
+  // the slot layout for the chosen mode (defaults to full so derived values
+  // are safe before a mode is picked; the game UI is gated on `mode` anyway)
+  const positions = MODES[mode]?.positions || POSITIONS_FULL;
+  const total = positions.length;
   const firstEmpty = squad.findIndex((s) => !s);
-  const done = firstEmpty === -1;
+  const done = squad.length > 0 && firstEmpty === -1;
   const picksMade = squad.filter(Boolean).length;
 
   /* ---- load pool: always from Champion Data, no synthetic fallback ---- */
@@ -351,9 +426,22 @@ export default function PerfectSeason() {
     [pool, undrafted]
   );
 
-  // animate the reels, then settle on `target` (which is guaranteed valid)
+  // clubs that still field an undrafted player in a given era — used so a
+  // club re-roll can keep the current era fixed (only swap the club).
+  const clubsForEra = useCallback(
+    (era) => {
+      if (!pool) return [];
+      return Array.from(
+        new Set(pool.filter((p) => p.era === era && undrafted(p)).map((p) => p.club))
+      );
+    },
+    [pool, undrafted]
+  );
+
+  // animate the reels, then settle on `target` (which is guaranteed valid).
+  // lockClub / lockEra hold that reel steady through the flicker.
   const animateTo = useCallback(
-    (target, lockClub) => {
+    (target, { lockClub = false, lockEra = false } = {}) => {
       setSpinning(true);
       let ticks = 0;
       const maxTicks = 14 + Math.floor(Math.random() * 8);
@@ -362,8 +450,13 @@ export default function PerfectSeason() {
       reelTimer.current = setInterval(() => {
         ticks++;
         const flickClub = lockClub ? target.club : rnd(allClubs.length ? allClubs : [target.club]);
-        const subEras = erasForClub(flickClub);
-        const flickEra = subEras.length ? rnd(subEras) : null;
+        let flickEra;
+        if (lockEra) {
+          flickEra = target.era;
+        } else {
+          const subEras = erasForClub(flickClub);
+          flickEra = subEras.length ? rnd(subEras) : null;
+        }
         setReels({ club: flickClub, era: flickEra });
         if (ticks >= maxTicks) {
           clearInterval(reelTimer.current);
@@ -382,19 +475,27 @@ export default function PerfectSeason() {
     if (!cs.length) return;
     const club = rnd(cs);
     const es = erasForClub(club);
-    animateTo({ club, era: es.length ? rnd(es) : null }, false);
+    animateTo({ club, era: es.length ? rnd(es) : null });
   }
 
-  // reroll just the club, keep nothing fixed (era follows new club); 1/game
+  // reroll just the club, holding the era fixed where possible; 1/game
   function rerollClub() {
     if (!pool || spinning || done || !clubReroll || !reels.club) return;
+    // prefer other clubs that still have players in the SAME era so only the
+    // club reel changes; fall back to any club (era follows) if none remain.
+    const sameEra = clubsForEra(reels.era).filter((c) => c !== reels.club);
+    if (sameEra.length) {
+      setClubReroll(false);
+      animateTo({ club: rnd(sameEra), era: reels.era }, { lockEra: true });
+      return;
+    }
     const cs = clubsWithPlayers().filter((c) => c !== reels.club);
     const pickFrom = cs.length ? cs : clubsWithPlayers();
     if (!pickFrom.length) return;
     setClubReroll(false);
     const club = rnd(pickFrom);
     const es = erasForClub(club);
-    animateTo({ club, era: es.length ? rnd(es) : null }, false);
+    animateTo({ club, era: es.length ? rnd(es) : null });
   }
 
   // reroll just the era, keep the club fixed; 1/game
@@ -403,20 +504,20 @@ export default function PerfectSeason() {
     const es = erasForClub(reels.club).filter((e) => e !== reels.era);
     if (!es.length) return; // no other era available for this club
     setEraReroll(false);
-    animateTo({ club: reels.club, era: rnd(es) }, true);
+    animateTo({ club: reels.club, era: rnd(es) }, { lockClub: true });
   }
 
   // is a player's natural position full? (counts every slot of that code)
   const positionFull = useCallback(
-    (code) => !POSITIONS.some((pos, i) => pos.code === code && !squad[i]),
-    [squad]
+    (code) => !positions.some((pos, i) => pos.code === code && !squad[i]),
+    [positions, squad]
   );
 
   // drafting a player drops them into their own position; if every slot for
   // that position is taken, the pick is blocked and the user picks another.
   function draft(player) {
     if (spinning || done) return;
-    const slot = POSITIONS.findIndex(
+    const slot = positions.findIndex(
       (pos, i) => pos.code === player.pos && !squad[i]
     );
     if (slot === -1) {
@@ -434,19 +535,30 @@ export default function PerfectSeason() {
     setReels({ club: null, era: null });
   }
 
-  function clearSlot(slotIndex) {
-    setSquad((sq) => {
-      const next = sq.slice();
-      next[slotIndex] = null;
-      return next;
-    });
-  }
-
-  function reset() {
-    setSquad(POSITIONS.map(() => null));
+  // start a fresh game in the given mode
+  function startGame(m) {
+    setMode(m);
+    setSquad(MODES[m].positions.map(() => null));
     setReels({ club: null, era: null });
     setClubReroll(true);
     setEraReroll(true);
+    setNotice(null);
+  }
+
+  // draft a new side in the same mode
+  function reset() {
+    setSquad(positions.map(() => null));
+    setReels({ club: null, era: null });
+    setClubReroll(true);
+    setEraReroll(true);
+    setNotice(null);
+  }
+
+  // back to the mode picker
+  function changeMode() {
+    setMode(null);
+    setSquad([]);
+    setReels({ club: null, era: null });
     setNotice(null);
   }
 
@@ -455,6 +567,13 @@ export default function PerfectSeason() {
     filled.length > 0 ? filled.reduce((a, b) => a + b.rating, 0) / filled.length : 0;
   const rec = recordFromRating(avg);
   const v = verdict(rec.wins);
+
+  // when the spun club genuinely has nobody draftable for an open slot, the
+  // player can't be forced to pick — allow a free re-spin in that case only.
+  const noDraftable =
+    !!reels.club &&
+    !spinning &&
+    (candidates.length === 0 || candidates.every((c) => positionFull(c.pos)));
 
   /* ===================== render ===================== */
   return (
@@ -479,7 +598,7 @@ export default function PerfectSeason() {
           PERFECT<span style={{ color: C.flare }}>·</span>SEASON
         </h1>
         <p style={S.sub}>
-          Spin for a club and era. Draft the player. Fill all thirteen and chase a flawless 24–0.
+          Spin for a club and era. Draft the player. Fill your side and chase a flawless 24–0.
         </p>
       </header>
 
@@ -510,14 +629,39 @@ export default function PerfectSeason() {
         </div>
       )}
 
-      {pool && (
+      {/* mode picker — choose the game length before drafting */}
+      {pool && !mode && (
+        <div style={S.modeWrap}>
+          <div style={S.modeIntro}>Choose your game</div>
+          <div style={S.modeRow}>
+            <button style={S.modeCard} onClick={() => startGame("quick")}>
+              <div style={S.modeCount}>9</div>
+              <div style={S.modeName}>QUICK NINE</div>
+              <div style={S.modeDesc}>
+                One player for each of the nine positions. A fast all-time
+                spine — fullback through lock.
+              </div>
+            </button>
+            <button style={S.modeCard} onClick={() => startGame("full")}>
+              <div style={S.modeCount}>13</div>
+              <div style={S.modeName}>FULL LINE-UP</div>
+              <div style={S.modeDesc}>
+                The complete 1–13 team sheet: two wings, two centres, two
+                props and two second-rowers.
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pool && mode && (
         <div className="ps-grid" style={S.grid}>
           {/* LEFT: the reel + full roster */}
           <section style={S.panel}>
             {!done ? (
               <>
                 <div style={S.panelHead}>
-                  <span style={S.pill}>{picksMade} / 13 DRAFTED</span>
+                  <span style={S.pill}>{picksMade} / {total} DRAFTED</span>
                   <span style={S.posBig}>SPIN &amp; DRAFT</span>
                 </div>
 
@@ -577,7 +721,7 @@ export default function PerfectSeason() {
                     </div>
                     {candidates.length === 0 ? (
                       <div style={S.empty}>
-                        No players left from this draw — spin again for another club.
+                        No players left from this draw.
                       </div>
                     ) : (
                       <div style={S.candScroll}>
@@ -611,18 +755,20 @@ export default function PerfectSeason() {
                         </div>
                       </div>
                     )}
-                    <button style={S.spinAgain} onClick={spinFresh}>
-                      ↻ spin again (free)
-                    </button>
+                    {noDraftable && (
+                      <button style={{ ...S.btn, ...S.btnPrimary, marginTop: 12 }} onClick={spinFresh}>
+                        SPIN AGAIN
+                      </button>
+                    )}
                   </div>
                 )}
 
                 {!reels.club && (
                   <div style={S.hint}>
                     Hit <b>SPIN</b> to roll a random club and era, then draft a player —
-                    they slot straight into their own position. If that position's already
-                    filled you'll have to pick someone else. One club re-roll and one era
-                    re-roll for the whole game.
+                    they slot straight into their own position. Once you spin you have to
+                    draft from that club, so spend your <b>one club re-roll</b> and{" "}
+                    <b>one era re-roll</b> wisely.
                   </div>
                 )}
               </>
@@ -640,7 +786,7 @@ export default function PerfectSeason() {
               </span>
             </div>
             <ol style={S.sheetList}>
-              {POSITIONS.map((pos, i) => {
+              {positions.map((pos, i) => {
                 const p = squad[i];
                 return (
                   <li key={i} style={S.row}>
@@ -659,31 +805,24 @@ export default function PerfectSeason() {
                         <span style={{ color: C.line }}>—</span>
                       )}
                     </span>
-                    {p && !done ? (
-                      <button
-                        style={S.rowClear}
-                        title="Remove"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearSlot(i);
-                        }}
-                      >
-                        ✕
-                      </button>
-                    ) : (
-                      <span style={p ? S.rowRating(p.rating) : S.rowRatingEmpty}>
-                        {p ? p.rating : ""}
-                      </span>
-                    )}
+                    {/* drafted players are locked in — record stands as picked */}
+                    <span style={p ? S.rowRating(p.rating) : S.rowRatingEmpty}>
+                      {p ? p.rating : ""}
+                    </span>
                   </li>
                 );
               })}
             </ol>
-            {filled.length > 0 && !done && (
-              <button style={S.resetMini} onClick={reset}>
-                start over
+            <div style={S.sheetFoot}>
+              {filled.length > 0 && !done && (
+                <button style={S.resetMini} onClick={reset}>
+                  start over
+                </button>
+              )}
+              <button style={S.resetMini} onClick={changeMode}>
+                change mode
               </button>
-            )}
+            </div>
           </section>
         </div>
       )}
@@ -825,6 +964,39 @@ const S = {
   },
   errBody: { fontSize: 13.5, color: C.chalkDim, lineHeight: 1.6, margin: 0 },
 
+  modeWrap: { position: "relative", maxWidth: 720, margin: "30px auto 0", textAlign: "center" },
+  modeIntro: {
+    fontFamily: mono,
+    fontSize: 12,
+    letterSpacing: "0.24em",
+    color: C.chalkDim,
+    textTransform: "uppercase",
+    marginBottom: 18,
+  },
+  modeRow: { display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" },
+  modeCard: {
+    flex: "1 1 260px",
+    maxWidth: 320,
+    textAlign: "left",
+    background: "rgba(255,255,255,0.025)",
+    border: `1px solid ${C.line}`,
+    borderRadius: 8,
+    padding: "22px 22px 24px",
+    cursor: "pointer",
+    color: C.chalk,
+    transition: "border-color 0.15s, background 0.15s",
+  },
+  modeCount: { fontFamily: cond, fontSize: 52, lineHeight: 1, color: C.flare },
+  modeName: {
+    fontFamily: cond,
+    fontSize: 22,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    margin: "8px 0 8px",
+  },
+  modeDesc: { fontSize: 13, color: C.chalkDim, lineHeight: 1.55 },
+  sheetFoot: { display: "flex", gap: 18, marginTop: 14, alignItems: "center" },
+
   grid: {
     position: "relative",
     maxWidth: 980,
@@ -890,22 +1062,6 @@ const S = {
 
   controls: { marginBottom: 8 },
   rerollRow: { display: "flex", gap: 10 },
-  spinAgain: {
-    marginTop: 12,
-    background: "none",
-    border: "none",
-    color: C.chalkDim,
-    fontFamily: mono,
-    fontSize: 11,
-    letterSpacing: "0.12em",
-    cursor: "pointer",
-    textDecoration: "underline",
-    textUnderlineOffset: 3,
-    display: "block",
-    width: "100%",
-    textAlign: "center",
-    padding: "4px 0",
-  },
   btn: {
     fontFamily: cond,
     fontSize: 17,
@@ -1015,17 +1171,6 @@ const S = {
     boxShadow: `inset 3px 0 0 ${C.flare}`,
     borderRadius: 2,
   },
-  rowClear: {
-    background: "none",
-    border: "none",
-    color: C.flareDim,
-    fontSize: 13,
-    cursor: "pointer",
-    minWidth: 28,
-    textAlign: "right",
-    padding: 0,
-    lineHeight: 1,
-  },
   rowNum: {
     fontFamily: cond,
     fontSize: 16,
@@ -1051,7 +1196,6 @@ const S = {
   }),
   rowRatingEmpty: { minWidth: 28 },
   resetMini: {
-    marginTop: 14,
     background: "none",
     border: "none",
     color: C.chalkDim,
