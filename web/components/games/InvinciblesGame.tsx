@@ -8,11 +8,11 @@ import { loadPool, loadStrengths } from "@/lib/data";
 import type { PoolPlayer } from "@/lib/types";
 import { simulateSeason, type SimResult } from "@/lib/sim";
 import { POS_CODES, POS_LABEL } from "@/lib/format";
-import { clubColors } from "@/lib/clubs";
 import { submitScore } from "@/lib/leaderboard";
 import { getName, setName } from "@/lib/progress";
 import { tick, settle } from "@/lib/sound";
 import Confetti from "@/components/Confetti";
+import TeamPitch from "@/components/TeamPitch";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const SLOTS = POS_CODES.map((c, i) => ({ code: c, n: i + 1 }));
@@ -195,24 +195,12 @@ export default function InvinciblesGame() {
 
       <section className="card" style={{ padding: "1rem", alignSelf: "start" }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: ".68rem", letterSpacing: ".12em", color: "var(--muted)", textTransform: "uppercase", paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
-          <span>Squad</span><span style={{ color: "var(--gold)" }}>{filled.length ? `AVG ${avg.toFixed(1)}` : "—"}</span>
+          <span>Field</span><span style={{ color: "var(--gold)" }}>{filled.length ? `AVG ${avg.toFixed(1)}` : "—"}</span>
         </div>
-        <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
-          {SLOTS.map((s, i) => {
-            const p = squad[i];
-            const [c1] = p ? clubColors(p.club) : ["var(--border)"];
-            return (
-              <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 2px", borderBottom: "1px solid var(--border)", fontSize: ".84rem" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: ".6rem", color: "var(--muted)", minWidth: 22 }}>{s.code}</span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  {p ? <><span style={{ display: "inline-block", width: 7, height: 7, borderRadius: 2, background: c1, marginRight: 6 }} />{p.name} <span style={{ color: "var(--muted)", fontSize: ".7rem" }}>{p.era}</span></> : <span style={{ color: "var(--border)" }}>{POS_LABEL[s.code]}</span>}
-                </span>
-                <span style={{ fontFamily: "var(--font-cond)", color: p && p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p ? p.rating : ""}</span>
-              </li>
-            );
-          })}
-        </ol>
-        {filled.length > 0 && <button className="btn" style={{ width: "100%", marginTop: 10 }} onClick={reset}>Start over</button>}
+        <div style={{ marginTop: 12 }}>
+          <TeamPitch slots={SLOTS} squad={squad} mode="quick" />
+        </div>
+        {filled.length > 0 && <button className="btn" style={{ width: "100%", marginTop: 12 }} onClick={reset}>Start over</button>}
       </section>
     </div>
   );

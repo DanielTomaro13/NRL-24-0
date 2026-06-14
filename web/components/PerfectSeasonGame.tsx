@@ -14,13 +14,13 @@ import {
 } from "@/lib/types";
 import { seasonRecord, simulateSeason, verdict } from "@/lib/sim";
 import { POS_LABEL, POS_CODES } from "@/lib/format";
-import { clubColors } from "@/lib/clubs";
 import { submitScore } from "@/lib/leaderboard";
 import { getName, setName, todayKey } from "@/lib/progress";
 import { tick, settle, fanfare, isMuted, toggleMuted } from "@/lib/sound";
 import Confetti from "@/components/Confetti";
 import ShareButtons from "@/components/ShareButtons";
 import AdUnit from "@/components/AdUnit";
+import TeamPitch from "@/components/TeamPitch";
 import { AD_SLOTS } from "@/lib/ads";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -411,33 +411,12 @@ export default function PerfectSeasonGame() {
       {/* RIGHT: team sheet */}
       <section className="card" style={{ padding: "1rem 1rem 1.1rem", alignSelf: "start" }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: ".7rem", letterSpacing: ".12em", color: "var(--muted)", textTransform: "uppercase", paddingBottom: 10, borderBottom: "1px solid var(--border)" }}>
-          <span>Team sheet</span>
+          <span>Field</span>
           <span style={{ color: "var(--gold)" }}>{filled.length ? `AVG ${avg.toFixed(1)}` : "—"}</span>
         </div>
-        <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
-          {slots.map((s, i) => {
-            const p = squad[i];
-            const [c1] = p ? clubColors(p.club) : ["var(--border)"];
-            return (
-              <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 2px", borderBottom: "1px solid var(--border)" }}>
-                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1rem", color: "var(--muted)", minWidth: 18, textAlign: "center" }}>{s.n}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: ".62rem", color: "var(--muted)", minWidth: 22 }}>{s.code}</span>
-                <span style={{ flex: 1, minWidth: 0, fontSize: ".85rem", display: "flex", flexDirection: "column" }}>
-                  {p ? (
-                    <>
-                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, background: c1, flexShrink: 0 }} />
-                        {p.name}
-                      </span>
-                      <span style={{ fontSize: ".66rem", color: "var(--muted)" }}>{p.club} · {p.era}</span>
-                    </>
-                  ) : <span style={{ color: "var(--border)" }}>—</span>}
-                </span>
-                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.1rem", color: p && p.rating >= 90 ? "var(--gold)" : "var(--text)", minWidth: 26, textAlign: "right" }}>{p ? p.rating : ""}</span>
-              </li>
-            );
-          })}
-        </ol>
+        <div style={{ marginTop: 12 }}>
+          <TeamPitch slots={slots} squad={squad} mode={mode} />
+        </div>
         <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
           {filled.length > 0 && !done && (
             <button onClick={reset} style={linkBtn}>start over</button>
