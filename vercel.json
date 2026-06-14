@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/cd/:path*", "destination": "https://mc.championdata.com/:path*" }
-  ]
-}

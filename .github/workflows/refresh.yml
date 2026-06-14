@@ -1,0 +1,29 @@
+name: Refresh NRL data
+
+# Re-runs the Champion Data pipeline weekly during the season and commits the
+# updated JSON. The deploy workflow then redeploys automatically on the push.
+on:
+  schedule:
+    - cron: "0 19 * * 1" # Mondays 19:00 UTC (~Tue morning AET)
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run data
+      - name: Commit refreshed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add web/public/data
+          git diff --staged --quiet || git commit -m "data: weekly Champion Data refresh"
+          git push

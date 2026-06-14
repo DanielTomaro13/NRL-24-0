@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://24-0.com/sitemap.xml

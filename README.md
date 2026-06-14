@@ -1,11 +1,15 @@
-# 24-0
+# NRL 24-0
 
-Build an all-time **NRL** team and chase a perfect **24–0** home-and-away season. A rugby league take on the [23-0](https://23-0.com/) format.
+Build an all-time **NRL** team and chase a perfect **24–0** season — plus a vault of rugby-league mini-games, ladders, fixtures, stats and player profiles. The rugby league entry in the **0 Series**, alongside [AFL 23-0](https://afl23-0.com) and [Football Invincibles](https://footballinvincibles.com).
 
-Spin for a random club and era, draft a player from that roster into an open position, and fill your side. Your squad's average rating sets your win–loss record. You get **one club re-roll** and **one era re-roll** for the whole game — and once you spin you have to draft from that club, so spend them wisely.
+Live at **[nrl24-0.com](https://nrl24-0.com)**.
 
-- **Two modes:** *Quick Nine* (one player per position) or *Full Line-up* (the complete 1–13 team sheet).
-- **Real data, no fakes.** Player ratings are built from real Champion Data match stats (`mc.championdata.com`) — the feeds that power nrl.com's match centre. Every completed match of every NRL season is aggregated on load.
+## What's inside
+
+- **Perfect Season** (`/play`) — spin for a random club and era, draft a legend into every position, and chase a flawless 24–0. Six modes: *Quick Nine*, *Full 13*, *Match-day 17*, *Salary Cap 17*, *The Gauntlet* and *Wooden Spoon*. A Monte-Carlo simulator reports your odds of going 24–0 and how you rate against real premiership sides.
+- **Seven mini-games** (`/games`) — **Footle** (daily player Wordle), **Higher or Lower**, **Guess the Player** (daily 7-clue), **Career Path**, **Beat the Clock**, **Score Predictor** and the **Invincibles** squad-builder.
+- **Stats hub** — the **ladder** for every season, **fixtures & results**, career **stat leaders**, a searchable **players** database with a static profile page per player, and a **Hall of Fame** across every game.
+- **Real data, no fakes.** Everything is built from real Champion Data match stats (`mc.championdata.com`) — the feeds that power nrl.com's match centre — aggregated at build time across every NRL Premiership season from 2014 on.
 
 ## Scoring
 
@@ -32,30 +36,50 @@ A player's rating comes from their **per-game fantasy points**, using the offici
 | Try save | 5 |
 | Kick defused | 1 |
 
-Each player's points are averaged across all their games and mapped through a sigmoid into a **60–99** rating, calibrated so a median starter sits in the low 80s and only genuine stars reach the high 90s. A squad averaging the high 90s is what it takes to go 24–0. (A few scoring lines — 6-again, turnovers, escape-in-goal — have no dedicated feed field and are omitted.)
+Each player's points are averaged across their games and mapped through a sigmoid into a **60–99** rating, calibrated so a median starter sits in the low 80s and only genuine stars reach the high 90s. A squad averaging the high 90s is what it takes to go 24–0.
+
+## Architecture
+
+An npm-workspaces monorepo:
+
+```
+pipeline/   Node script that walks Champion Data → web/public/data/*.json
+web/        Next.js 15 app (App Router, static export) — the whole site
+worker/     Optional Cloudflare Worker + KV for the global leaderboard
+```
+
+The web app is a **static export** (`output: "export"`), so it deploys anywhere static. The committed JSON under `web/public/data` is the entire dataset, so the build needs no network.
 
 ## Run locally
 
 ```bash
 npm install
-npm run dev
+npm run data     # (re)build the dataset from Champion Data — optional, JSON is committed
+npm run dev      # Next.js dev server on :3000
 ```
 
-## Build
+## Build & deploy
 
 ```bash
-npm run build      # static files to dist/
-npm run preview    # preview the production build
+npm run build    # static export to web/out/
 ```
 
-The build uses a relative base path, so `dist/` serves from a domain root (Netlify, Vercel, custom domain) or a GitHub Pages subpath unchanged. The workflow at `.github/workflows/deploy.yml` builds and publishes `dist/` to Pages on every push to `main`.
+Deployed to **Cloudflare Pages** (build `npm run build`, output `web/out`) on the domain `nrl24-0.com`. `.github/workflows/deploy.yml` builds and publishes on every push to `main`; `refresh.yml` re-runs the data pipeline weekly and commits the result.
 
-### CORS / the proxy
+### Global leaderboard (optional)
 
-The browser fetches the Champion Data feeds directly; the CDN serves them with `Access-Control-Allow-Origin: *`, so **GitHub Pages works as-is**. A same-origin proxy is bundled as a fallback: `netlify.toml` / `vercel.json` forward `/cd/*` → `https://mc.championdata.com/*`. Set `VITE_API_BASE=/cd` to use it.
+Scores save to per-browser `localStorage` out of the box. To make them global, deploy the Worker in `worker/`:
+
+```bash
+cd worker
+npx wrangler kv namespace create BOARD   # paste the id into wrangler.toml
+npx wrangler deploy
+```
+
+then set `NEXT_PUBLIC_LEADERBOARD_URL` to the Worker URL.
 
 ## Notes
 
-Unofficial fan project. Not affiliated with or endorsed by the National Rugby League or Champion Data. Built against publicly accessible feeds for personal, non-commercial use; player data always comes from Champion Data and is never substituted with synthetic data.
+Unofficial fan project. Not affiliated with or endorsed by the National Rugby League, any club, or Champion Data. Built against publicly accessible feeds for personal, non-commercial use; player data always comes from Champion Data and is never substituted with synthetic data.
 
-`nrl` · `rugby-league` · `nrl-fantasy` · `fantasy-sports` · `sports-game` · `react` · `vite` · `champion-data` · `nrl-draft`
+`nrl` · `rugby-league` · `nrl-fantasy` · `sports-game` · `next-js` · `champion-data` · `nrl-draft` · `nrl-ladder` · `mini-games`

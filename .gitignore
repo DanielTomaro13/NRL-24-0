@@ -1,12 +1,22 @@
 node_modules
-dist
-dist-ssr
-*.local
 .DS_Store
+
+# Next.js
+web/.next
+web/out
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo
+web/.vercel
+
+# env
 .env
 .env.*
+!.env.example
+
+# worker
+worker/.wrangler
+
 npm-debug.log*
 yarn-error.log*
-.vite
 
 .claude
