@@ -97,14 +97,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteFooter />
         <JsonLd data={orgLd} />
         <JsonLd data={appLd} />
-        {/* Google AdSense loader — beforeInteractive so the tag is in the static
-            HTML for the AdSense crawler to verify, and Auto Ads can run */}
-        <Script
-          id="adsbygoogle-init"
+        {/* Google AdSense loader — a literal <script> (React hoists it into
+            <head>) so the AdSense crawler sees the real snippet, not a preload */}
+        <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`}
           crossOrigin="anonymous"
-          strategy="beforeInteractive"
         />
         {/* Cloudflare Web Analytics — privacy-friendly, no cookies */}
         <Script
