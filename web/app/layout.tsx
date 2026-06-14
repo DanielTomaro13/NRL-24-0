@@ -52,6 +52,10 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   manifest: "/manifest.webmanifest",
+  other: {
+    // Google AdSense site-verification meta tag (emitted into the static <head>)
+    "google-adsense-account": AD_CLIENT,
+  },
 };
 
 const orgLd = {
@@ -93,13 +97,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteFooter />
         <JsonLd data={orgLd} />
         <JsonLd data={appLd} />
-        {/* Google AdSense loader — enables Auto Ads + the manual units above */}
+        {/* Google AdSense loader — beforeInteractive so the tag is in the static
+            HTML for the AdSense crawler to verify, and Auto Ads can run */}
         <Script
           id="adsbygoogle-init"
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
         {/* Cloudflare Web Analytics — privacy-friendly, no cookies */}
         <Script

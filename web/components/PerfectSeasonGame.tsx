@@ -13,7 +13,7 @@ import {
   Mode, MODE_INFO, PoolPlayer, REROLLS, SQUADS, SALARY_CAP, salaryFor,
 } from "@/lib/types";
 import { seasonRecord, simulateSeason, verdict } from "@/lib/sim";
-import { POS_LABEL } from "@/lib/format";
+import { POS_LABEL, POS_CODES } from "@/lib/format";
 import { clubColors } from "@/lib/clubs";
 import { submitScore } from "@/lib/leaderboard";
 import { getName, setName, todayKey } from "@/lib/progress";
@@ -36,6 +36,7 @@ export default function PerfectSeasonGame() {
   const [rerolls, setRerolls] = useState({ club: 0, era: 0 });
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingPick, setPendingPick] = useState<{ player: PoolPlayer; codes: string[] } | null>(null);
+  const [posFilter, setPosFilter] = useState("All");
   const [muted, setMuted] = useState(false);
   const spinningRef = useRef(false);
   const flickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -96,6 +97,7 @@ export default function PerfectSeasonGame() {
     spinningRef.current = true;
     setSpinning(true);
     setPendingPick(null);
+    setPosFilter("All");
     const allClubs = clubsWithPlayers();
     const finalize = () => {
       if (flickRef.current) clearInterval(flickRef.current);
@@ -201,6 +203,18 @@ export default function PerfectSeasonGame() {
     setNotice(null);
     setPendingPick(null);
   }
+
+  // positions that still have an open slot (for highlighting the filters)
+  const openPosCodes = useMemo(() => {
+    const set = new Set<string>();
+    slots.forEach((s, i) => { if (!squad[i] && s.code !== "INT") set.add(s.code); });
+    return set;
+  }, [slots, squad]);
+
+  const shownCandidates = useMemo(() => {
+    if (posFilter === "All") return candidates;
+    return candidates.filter((p) => (p.elig?.length ? p.elig : [p.pos]).includes(posFilter));
+  }, [candidates, posFilter]);
 
   const noDraftable = !!reels.club && !spinning &&
     (candidates.length === 0 || candidates.every((c) => !playerPlaceable(c)));
@@ -321,13 +335,34 @@ export default function PerfectSeasonGame() {
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
                   <strong>{reels.club}</strong>
                   {reels.era && <span style={{ color: "var(--gold)" }}>· {reels.era}</span>}
-                  <span className="chip" style={{ marginLeft: "auto" }}>{candidates.length} available</span>
+                  <span className="chip" style={{ marginLeft: "auto" }}>{shownCandidates.length} of {candidates.length}</span>
                 </div>
-                {candidates.length === 0 ? (
-                  <p style={{ color: "var(--muted)", fontStyle: "italic" }}>No players left from this draw.</p>
+
+                {/* filter the spun roster by position — open slots are highlighted */}
+                <div className="scroll-x" style={{ display: "flex", gap: 5, marginBottom: 10, paddingBottom: 2 }}>
+                  {["All", ...POS_CODES].map((code) => {
+                    const open = code === "All" || openPosCodes.has(code);
+                    const active = posFilter === code;
+                    return (
+                      <button key={code} onClick={() => setPosFilter(code)} className="chip"
+                        style={{ cursor: "pointer", flexShrink: 0, fontSize: ".68rem",
+                          borderColor: active ? "var(--accent)" : open ? "var(--border)" : "transparent",
+                          color: active ? "var(--text)" : open ? "var(--gold)" : "var(--muted)",
+                          opacity: open ? 1 : 0.5 }}
+                        title={code === "All" ? "All positions" : POS_LABEL[code]}>
+                        {code}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {shownCandidates.length === 0 ? (
+                  <p style={{ color: "var(--muted)", fontStyle: "italic" }}>
+                    {candidates.length === 0 ? "No players left from this draw." : `No ${POS_LABEL[posFilter] || posFilter} in this draw.`}
+                  </p>
                 ) : (
-                  <div className="scroll-x" style={{ maxHeight: 360, overflowY: "auto", display: "grid", gap: 6 }}>
-                    {candidates.slice(0, 60).map((p) => {
+                  <div className="scroll-x" style={{ maxHeight: 340, overflowY: "auto", display: "grid", gap: 6 }}>
+                    {shownCandidates.slice(0, 60).map((p) => {
                       const full = !playerPlaceable(p);
                       const posLabel = p.elig?.length > 1 ? p.elig.join("/") : p.pos;
                       return (

@@ -26,6 +26,7 @@ export default function InvinciblesGame() {
   const [result, setResult] = useState<SimResult | null>(null);
   const [name, setNm] = useState("");
   const [saved, setSaved] = useState(false);
+  const [posFilter, setPosFilter] = useState("All");
   const spinRef = useRef(false);
 
   useEffect(() => {
@@ -44,9 +45,19 @@ export default function InvinciblesGame() {
   const avg = filled.length ? filled.reduce((a, b) => a + b.rating, 0) / filled.length : 0;
   const complete = filled.length === SLOTS.length;
 
+  const openPosCodes = useMemo(() => {
+    const set = new Set<string>();
+    SLOTS.forEach((s, i) => { if (!squad[i]) set.add(s.code); });
+    return set;
+  }, [squad]);
+  const shownCandidates = useMemo(
+    () => posFilter === "All" ? candidates : candidates.filter((p) => (p.elig?.length ? p.elig : [p.pos]).includes(posFilter)),
+    [candidates, posFilter]
+  );
+
   function spin() {
     if (!pool || spinRef.current || complete) return;
-    spinRef.current = true; setSpinning(true);
+    spinRef.current = true; setSpinning(true); setPosFilter("All");
     const clubs = Array.from(new Set(pool.filter(undrafted).map((p) => p.club)));
     const club = rnd(clubs);
     const eras = Array.from(new Set(pool.filter((p) => p.club === club && undrafted(p)).map((p) => p.era)));
@@ -143,10 +154,25 @@ export default function InvinciblesGame() {
           <div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
               <strong>{reels.club}</strong>{reels.era && <span style={{ color: "var(--gold)" }}>· {reels.era}</span>}
-              <span className="chip" style={{ marginLeft: "auto" }}>{candidates.length} available</span>
+              <span className="chip" style={{ marginLeft: "auto" }}>{shownCandidates.length} of {candidates.length}</span>
+            </div>
+            <div className="scroll-x" style={{ display: "flex", gap: 5, marginBottom: 10, paddingBottom: 2 }}>
+              {["All", ...POS_CODES].map((code) => {
+                const open = code === "All" || openPosCodes.has(code);
+                const active = posFilter === code;
+                return (
+                  <button key={code} onClick={() => setPosFilter(code)} className="chip"
+                    style={{ cursor: "pointer", flexShrink: 0, fontSize: ".68rem",
+                      borderColor: active ? "var(--accent)" : open ? "var(--border)" : "transparent",
+                      color: active ? "var(--text)" : open ? "var(--gold)" : "var(--muted)", opacity: open ? 1 : 0.5 }}
+                    title={code === "All" ? "All positions" : POS_LABEL[code]}>
+                    {code}
+                  </button>
+                );
+              })}
             </div>
             <div style={{ maxHeight: 340, overflowY: "auto", display: "grid", gap: 6 }}>
-              {candidates.slice(0, 50).map((p) => {
+              {shownCandidates.slice(0, 50).map((p) => {
                 const full = slotFull(p.pos);
                 return (
                   <button key={p.id} onClick={() => draft(p)} disabled={full}
