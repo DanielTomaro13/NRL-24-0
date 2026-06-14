@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ProfilePlayer } from "@/lib/games-data";
 import type { Comp } from "@/lib/comp";
@@ -11,6 +11,12 @@ const FILTERS = ["All", "Back", "Halves", "Forward"];
 export default function PlayersBrowser({ players, comp = "nrl" }: { players: ProfilePlayer[]; comp?: Comp }) {
   const base = comp === "nrlw" ? "/w/players" : "/players";
   const [q, setQ] = useState("");
+  // Seed the search box from ?q= so the site-wide SearchAction (sitelinks
+  // search box) lands on a pre-filtered list.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("q");
+    if (p) setQ(p);
+  }, []);
   const [filter, setFilter] = useState("All");
   const [club, setClub] = useState("All clubs");
   const clubs = useMemo(() => ["All clubs", ...Array.from(new Set(players.map((p) => p.club))).sort()], [players]);

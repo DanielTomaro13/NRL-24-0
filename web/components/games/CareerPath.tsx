@@ -136,7 +136,7 @@ export default function CareerPath() {
   const correctId = round?.target.id ?? null;
 
   return (
-    <div style={styles.wrap}>
+    <div className="career-path" style={styles.wrap}>
       <style>{css}</style>
 
       <header style={styles.header}>
@@ -290,14 +290,16 @@ const styles: Record<string, React.CSSProperties> = {
   overMsg: { fontSize: 17 },
 };
 
+// Scoped under .career-path so these don't override the site-wide
+// .card / .chip / .btn design-system classes on this route.
 const css = `
-.card {
+.career-path .card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 16px;
 }
-.chip {
+.career-path .chip {
   background: var(--panel-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -307,7 +309,7 @@ const css = `
   border-radius: 999px;
   letter-spacing: 0.3px;
 }
-.btn {
+.career-path .btn {
   font: inherit;
   cursor: pointer;
   border-radius: 12px;
@@ -317,30 +319,30 @@ const css = `
   font-weight: 600;
   transition: background 0.12s ease, border-color 0.12s ease, transform 0.06s ease;
 }
-.btn:active { transform: translateY(1px); }
-.btn:disabled { cursor: default; }
-.answer {
+.career-path .btn:active { transform: translateY(1px); }
+.career-path .btn:disabled { cursor: default; }
+.career-path .answer {
   min-height: 44px;
   padding: 12px 14px;
   font-size: 15px;
   line-height: 1.25;
   text-align: center;
 }
-.answer:not(:disabled):hover {
+.career-path .answer:not(:disabled):hover {
   border-color: var(--accent);
   background: var(--panel);
 }
-.answer.correct {
+.career-path .answer.correct {
   background: color-mix(in srgb, var(--accent-2) 22%, var(--panel-2));
   border-color: var(--accent-2);
   color: var(--text);
 }
-.answer.wrong {
+.career-path .answer.wrong {
   background: color-mix(in srgb, var(--danger) 22%, var(--panel-2));
   border-color: var(--danger);
   color: var(--text);
 }
-.play-again {
+.career-path .play-again {
   min-height: 44px;
   padding: 12px 22px;
   font-size: 15px;
@@ -348,13 +350,13 @@ const css = `
   border-color: var(--accent);
   color: #fff;
 }
-.play-again:not(:disabled):hover { filter: brightness(1.08); }
-.answer-grid {
+.career-path .play-again:not(:disabled):hover { filter: brightness(1.08); }
+.career-path .answer-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 @media (max-width: 480px) {
-  .answer-grid { grid-template-columns: 1fr; }
+  .career-path .answer-grid { grid-template-columns: 1fr; }
 }
 `;

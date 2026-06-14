@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { loadResults, type Results, type MatchResult } from "@/lib/data";
 import { clubColors } from "@/lib/clubs";
-import { getComp } from "@/lib/comp";
 
 export interface FixturesInitial { seasons: string[]; latestSeason: string; matches: MatchResult[] }
 
@@ -12,9 +11,9 @@ export default function FixturesView({ initial }: { initial: FixturesInitial }) 
   const [season, setSeason] = useState(initial.latestSeason);
   const [club, setClub] = useState("All clubs");
   useEffect(() => {
-    const c = getComp();
+    // loadResults() is comp-aware; fetch the full set (all seasons) for the
+    // dropdown — the server-rendered `initial` only carries the latest season.
     loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); });
-    if (c === "nrlw") setSeason(""); // will be set by loadResults above
   }, []);
   const seasons = data?.seasons ?? initial.seasons;
   const all = data ? (data.bySeason[season] ?? []) : initial.matches;

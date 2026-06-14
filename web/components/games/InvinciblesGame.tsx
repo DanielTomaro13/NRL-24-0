@@ -73,18 +73,23 @@ export default function InvinciblesGame() {
     setTimeout(done, 1400);
   }
 
-  const slotFull = (code: string) => !SLOTS.some((s, i) => s.code === code && !squad[i]);
+  const eligCodes = (p: PoolPlayer) => (p.elig?.length ? p.elig : [p.pos]);
+  const playerFull = (p: PoolPlayer) => !eligCodes(p).some((c) => SLOTS.some((s, i) => s.code === c && !squad[i]));
   function draft(p: PoolPlayer) {
-    const slot = SLOTS.findIndex((s, i) => s.code === p.pos && !squad[i]);
-    if (slot === -1) return;
-    setSquad((sq) => { const n = sq.slice(); n[slot] = { ...p }; return n; });
+    // place into the first open slot among the player's eligible positions
+    const code = eligCodes(p).find((c) => SLOTS.some((s, i) => s.code === c && !squad[i]));
+    if (!code) return;
+    const slot = SLOTS.findIndex((s, i) => s.code === code && !squad[i]);
+    setSquad((sq) => { const n = sq.slice(); n[slot] = { ...p, pos: code, posName: POS_LABEL[code] || p.posName }; return n; });
     setReels({ club: null, era: null });
   }
 
   function simulate() {
     const eras = Array.from(new Set(filled.map((p) => p.era)));
     const sp = eras.flatMap((e) => strengths[e] || []);
-    setResult(simulateSeason(avg, sp.length ? sp : Object.values(strengths).flat()));
+    // seed from the actual squad so different sides don't share an identical record
+    const seed = filled.reduce((h, p) => (Math.imul(h, 31) + p.pid) >>> 0, 7);
+    setResult(simulateSeason(avg, sp.length ? sp : Object.values(strengths).flat(), seed));
   }
   function reset() {
     setSquad(SLOTS.map(() => null)); setReels({ club: null, era: null }); setResult(null); setSaved(false);
@@ -171,17 +176,19 @@ export default function InvinciblesGame() {
                 );
               })}
             </div>
-            <div style={{ maxHeight: 340, overflowY: "auto", display: "grid", gap: 6 }}>
+            <div style={{ maxHeight: 340, overflowY: "auto", overflowX: "hidden", display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 6 }}>
               {shownCandidates.slice(0, 50).map((p) => {
-                const full = slotFull(p.pos);
+                const full = playerFull(p);
+                const posLabel = p.elig?.length > 1 ? p.elig.join("/") : p.pos;
                 return (
                   <button key={p.id} onClick={() => draft(p)} disabled={full}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.4 : 1, textAlign: "left" }}>
-                    <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", minWidth: 30, textAlign: "center", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>
-                    <span style={{ flex: 1 }}>
-                      <span style={{ fontWeight: 600, fontSize: ".9rem" }}>{p.name} <span className="chip" style={{ fontSize: ".6rem", padding: "0 5px", color: "var(--gold)" }}>{p.pos}</span></span>
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.4 : 1, textAlign: "left", minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", minWidth: 28, textAlign: "center", color: p.rating >= 90 ? "var(--gold)" : "var(--text)", flexShrink: 0 }}>{p.rating}</span>
+                    <span style={{ flex: 1, minWidth: 0, display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontWeight: 600, fontSize: ".88rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{p.name}</span>
+                      <span className="chip" style={{ fontSize: ".58rem", padding: "0 5px", color: "var(--gold)", flexShrink: 0 }}>{posLabel}</span>
                     </span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: ".62rem", color: "var(--accent)" }}>{full ? "FULL" : "→"}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: ".62rem", color: "var(--accent)", flexShrink: 0 }}>{full ? "FULL" : "→"}</span>
                   </button>
                 );
               })}
