@@ -1,23 +1,22 @@
 import { pageMeta } from "@/lib/seo";
 import { allPlayers } from "@/lib/playerdb";
-import StatsBoards from "@/components/StatsBoards";
+import StatsClient from "@/components/StatsClient";
 
 export const metadata = pageMeta({
-  title: "NRL Stat Leaders — tries, metres, tackles & more",
-  description: "Career stat leaders across the dataset: most tries, run metres, tackles, line breaks, games and the top-rated players, filterable by position. Built from real NRL match data.",
+  title: "NRL & NRLW Stat Leaders — tries, metres, tackles & more",
+  description: "Career stat leaders for the NRL and NRLW: most tries, run metres, tackles, line breaks, games and the top-rated players, filterable by position. Built from real match data.",
   path: "/stats",
-  keywords: ["NRL stats", "NRL try scorers", "NRL stat leaders", "most NRL tries"],
+  keywords: ["NRL stats", "NRLW stats", "NRL try scorers", "NRL stat leaders"],
 });
 
 export default function StatsPage() {
-  const players = allPlayers();
   return (
     <div style={{ display: "grid", gap: "1.5rem" }}>
       <header>
         <h1 style={{ fontSize: "2rem", margin: 0, textTransform: "uppercase" }}>Stat Leaders</h1>
-        <p style={{ color: "var(--muted)", marginTop: 6 }}>Career leaders across the dataset, from real NRL match stats. Filter by position.</p>
+        <p style={{ color: "var(--muted)", marginTop: 6 }}>Career leaders from real match stats. Filter by position; switch NRL/NRLW in the header.</p>
       </header>
-      <StatsBoards players={players} />
+      <StatsClient initial={allPlayers("nrl")} />
     </div>
   );
 }

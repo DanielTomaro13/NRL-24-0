@@ -1,7 +1,6 @@
-/** Client loaders for the static datasets in /public/data. */
+/** Client loaders for the static datasets in /public/data/<comp>. */
 import type { Meta, PoolPlayer } from "@/lib/types";
-
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+import { dataBase, getComp } from "@/lib/comp";
 
 export interface LadderRow {
   club: string; p: number; w: number; l: number; d: number;
@@ -16,10 +15,12 @@ export interface Results {
 
 const cache = new Map<string, unknown>();
 async function loadJson<T>(file: string): Promise<T> {
-  if (cache.has(file)) return cache.get(file) as T;
-  const res = await fetch(`${BASE}/data/${file}`, { cache: "force-cache" });
+  const comp = getComp();
+  const key = `${comp}/${file}`;
+  if (cache.has(key)) return cache.get(key) as T;
+  const res = await fetch(`${dataBase(comp)}/${file}`, { cache: "force-cache" });
   const data = (await res.json()) as T;
-  cache.set(file, data);
+  cache.set(key, data);
   return data;
 }
 

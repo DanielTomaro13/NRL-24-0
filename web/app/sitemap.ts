@@ -28,11 +28,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "weekly",
     lastModified: now,
   }));
-  const players: MetadataRoute.Sitemap = notablePlayers().map((p) => ({
+  const players: MetadataRoute.Sitemap = notablePlayers("nrl").map((p) => ({
     url: `${SITE.url}/players/${p.id}/${p.slug}/`,
     priority: 0.5,
     changeFrequency: "weekly",
     lastModified: now,
   }));
-  return [...top, ...games, ...players];
+  const playersW: MetadataRoute.Sitemap = notablePlayers("nrlw").map((p) => ({
+    url: `${SITE.url}/w/players/${p.id}/${p.slug}/`,
+    priority: 0.4,
+    changeFrequency: "weekly",
+    lastModified: now,
+  }));
+  return [...top, ...games, ...players, ...playersW];
 }

@@ -7,9 +7,13 @@
  * static deploy — it's just "local" rather than "global".
  */
 import { getName } from "@/lib/progress";
+import { getComp } from "@/lib/comp";
 
 const ENDPOINT = process.env.NEXT_PUBLIC_LEADERBOARD_URL?.replace(/\/$/, "");
 const LKEY = "nrl240:lb:v1";
+
+// NRL keeps the bare game key; NRLW boards are namespaced so they stay separate.
+const compKey = (game: string) => (getComp() === "nrlw" ? `nrlw:${game}` : game);
 
 export interface ScoreEntry {
   name: string;
@@ -32,10 +36,11 @@ function localSave(all: Record<string, ScoreEntry[]>) {
 }
 
 export async function submitScore(
-  game: string,
+  rawGame: string,
   score: number,
   higherIsBetter = true
 ): Promise<void> {
+  const game = compKey(rawGame);
   const name = getName() || "Anonymous";
   if (ENDPOINT) {
     try {
@@ -58,10 +63,11 @@ export async function submitScore(
 }
 
 export async function topScores(
-  game: string,
+  rawGame: string,
   higherIsBetter = true,
   limit = 10
 ): Promise<ScoreEntry[]> {
+  const game = compKey(rawGame);
   if (ENDPOINT) {
     try {
       const r = await fetch(

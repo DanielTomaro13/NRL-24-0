@@ -115,17 +115,30 @@ async function mapLimit(items, limit, fn, onEach) {
   return out;
 }
 
+/* ---- competitions to build (NRL is the primary; NRLW mirrors it) ---------- */
+const COMP_DEFS = [
+  { label: "nrl", match: (n) => n.includes("nrl premiership") },
+  // NRLW regular seasons are named e.g. "2024 NRLW" (Finals/Origin/All Stars excluded)
+  { label: "nrlw", match: (n) => /\bnrlw\b/.test(n) && !/(final|origin|all stars|nines|pacific)/.test(n) },
+];
+
 /* ---- main ----------------------------------------------------------------- */
 async function main() {
-  const t0 = Date.now();
   console.log("→ Fetching competition catalogue…");
   const cat = await poolFetch(`${API}/data/competitions.json`);
-  let comps = arr(cat?.competitionDetails?.competition).filter((c) =>
-    String(c.name || "").toLowerCase().includes("nrl premiership")
-  );
-  comps.sort((a, b) => (b.season || 0) - (a.season || 0));
-  comps = comps.slice(0, MAX_SEASONS);
-  console.log(`  ${comps.length} NRL Premiership seasons: ${comps.map((c) => c.season).join(", ")}`);
+  const all = arr(cat?.competitionDetails?.competition);
+  for (const def of COMP_DEFS) {
+    let comps = all.filter((c) => def.match(String(c.name || "").toLowerCase()));
+    comps.sort((a, b) => (b.season || 0) - (a.season || 0));
+    comps = comps.slice(0, MAX_SEASONS);
+    console.log(`\n=== ${def.label.toUpperCase()} — ${comps.length} seasons: ${comps.map((c) => c.name).join(", ")} ===`);
+    await buildComp(def.label, comps);
+  }
+}
+
+async function buildComp(label, comps) {
+  const t0 = Date.now();
+  const outDir = join(OUT_DIR, label);
 
   const agg = new Map();             // playerKey -> per player-season aggregate
   const resultsBySeason = {};        // season -> [{round, home, away, hs, as}]
@@ -266,7 +279,10 @@ async function main() {
   console.log(`✓ games: ${gamePlayers.length} unique career players`);
 
   /* ---- per-season ladder + strength distribution ------------------------- */
-  const seasons = comps.map((c) => String(c.season)).filter((s) => resultsBySeason[s]?.length);
+  // dedupe seasons (e.g. NRLW ran two comps in 2022, both keyed as "2022")
+  const seasons = [...new Set(comps.map((c) => String(c.season)))]
+    .filter((s) => resultsBySeason[s]?.length)
+    .sort((a, b) => Number(b) - Number(a));
   const strengthsBySeason = {};
   const laddersBySeason = {};
   for (const s of seasons) {
@@ -293,28 +309,28 @@ async function main() {
   }
 
   /* ---- write outputs ----------------------------------------------------- */
-  await mkdir(OUT_DIR, { recursive: true });
+  await mkdir(outDir, { recursive: true });
   const generatedAt = new Date().toISOString();
   const clubsBySeasonObj = {};
   for (const [s, set] of Object.entries(clubsBySeason)) clubsBySeasonObj[s] = [...set].sort();
   const allClubs = [...new Set(Object.values(clubsBySeasonObj).flat())].sort();
   const latestSeason = seasons[0];
 
-  const meta = { generatedAt, seasons, latestSeason, clubs: allClubs, clubsBySeason: clubsBySeasonObj };
-  const games = { season: latestSeason, players: gamePlayers, strengthsBySeason };
+  const meta = { comp: label, generatedAt, seasons, latestSeason, clubs: allClubs, clubsBySeason: clubsBySeasonObj };
+  const games = { comp: label, season: latestSeason, players: gamePlayers, strengthsBySeason };
   const results = { seasons, bySeason: resultsBySeason, laddersBySeason };
   const strengths = { bySeason: strengthsBySeason };
 
   await Promise.all([
-    writeFile(join(OUT_DIR, "meta.json"), JSON.stringify(meta)),
-    writeFile(join(OUT_DIR, "pool.json"), JSON.stringify(pool)),
-    writeFile(join(OUT_DIR, "games.json"), JSON.stringify(games)),
-    writeFile(join(OUT_DIR, "results.json"), JSON.stringify(results)),
-    writeFile(join(OUT_DIR, "strengths.json"), JSON.stringify(strengths)),
+    writeFile(join(outDir, "meta.json"), JSON.stringify(meta)),
+    writeFile(join(outDir, "pool.json"), JSON.stringify(pool)),
+    writeFile(join(outDir, "games.json"), JSON.stringify(games)),
+    writeFile(join(outDir, "results.json"), JSON.stringify(results)),
+    writeFile(join(outDir, "strengths.json"), JSON.stringify(strengths)),
   ]);
 
   console.log(
-    `✓ wrote ${OUT_DIR} — ${pool.length} cards, ${gamePlayers.length} players, ` +
+    `✓ wrote ${outDir} — ${pool.length} cards, ${gamePlayers.length} players, ` +
     `${seasons.length} seasons in ${((Date.now() - t0) / 1000).toFixed(1)}s`
   );
 }

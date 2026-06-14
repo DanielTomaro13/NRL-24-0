@@ -1,13 +1,15 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { ProfilePlayer } from "@/lib/playerdb";
+import type { ProfilePlayer } from "@/lib/games-data";
+import type { Comp } from "@/lib/comp";
 import { clubColors } from "@/lib/clubs";
 import { POS_GROUP } from "@/lib/format";
 
 const FILTERS = ["All", "Back", "Halves", "Forward"];
 
-export default function PlayersBrowser({ players }: { players: ProfilePlayer[] }) {
+export default function PlayersBrowser({ players, comp = "nrl" }: { players: ProfilePlayer[]; comp?: Comp }) {
+  const base = comp === "nrlw" ? "/w/players" : "/players";
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
   const [club, setClub] = useState("All clubs");
@@ -41,7 +43,7 @@ export default function PlayersBrowser({ players }: { players: ProfilePlayer[] }
         {shown.map((p) => {
           const [c1] = clubColors(p.club);
           return (
-            <Link key={p.id} href={`/players/${p.id}/${p.slug}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
+            <Link key={p.id} href={`${base}/${p.id}/${p.slug}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
               <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</strong>
                 <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>

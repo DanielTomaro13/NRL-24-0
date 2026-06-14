@@ -6,24 +6,24 @@ import PlayerProfile from "@/components/PlayerProfile";
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return notablePlayers("nrl").map((p) => ({ id: String(p.id), slug: p.slug }));
+  return notablePlayers("nrlw").map((p) => ({ id: String(p.id), slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; slug: string }> }) {
   const { id } = await params;
-  const p = playerById("nrl", id);
+  const p = playerById("nrlw", id);
   if (!p) return {};
   return pageMeta({
-    title: `${p.name} — NRL profile, stats & rating`,
-    description: `${p.name}: ${p.posName} for ${p.club}. ${p.apps} NRL games, ${p.tries} tries, ${p.firstYear}–${p.lastYear}. All-time NRL 24-0 rating ${p.rating}.`,
-    path: `/players/${p.id}/${p.slug}`,
-    keywords: [p.name, "NRL", p.club, p.posName, "stats", "rating"],
+    title: `${p.name} — NRLW profile, stats & rating`,
+    description: `${p.name}: ${p.posName} for ${p.club}. ${p.apps} NRLW games, ${p.tries} tries, ${p.firstYear}–${p.lastYear}. All-time NRLW 24-0 rating ${p.rating}.`,
+    path: `/w/players/${p.id}/${p.slug}`,
+    keywords: [p.name, "NRLW", p.club, p.posName, "stats", "rating"],
   });
 }
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string; slug: string }> }) {
   const { id } = await params;
-  const p = playerById("nrl", id);
+  const p = playerById("nrlw", id);
   if (!p) notFound();
-  return <PlayerProfile p={p} comp="nrl" />;
+  return <PlayerProfile p={p} comp="nrlw" />;
 }

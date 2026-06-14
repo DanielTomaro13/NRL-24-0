@@ -1,7 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { ProfilePlayer } from "@/lib/playerdb";
+import type { ProfilePlayer } from "@/lib/games-data";
+import type { Comp } from "@/lib/comp";
 import { clubColors } from "@/lib/clubs";
 import { POS_GROUP } from "@/lib/format";
 
@@ -15,7 +16,8 @@ const BOARDS: { key: keyof ProfilePlayer; label: string }[] = [
 ];
 const GROUPS = ["All", "Back", "Halves", "Forward"];
 
-export default function StatsBoards({ players }: { players: ProfilePlayer[] }) {
+export default function StatsBoards({ players, comp = "nrl" }: { players: ProfilePlayer[]; comp?: Comp }) {
+  const base = comp === "nrlw" ? "/w/players" : "/players";
   const [group, setGroup] = useState("All");
   const pool = useMemo(
     () => players.filter((p) => group === "All" || POS_GROUP[p.pos] === group),
@@ -44,7 +46,7 @@ export default function StatsBoards({ players }: { players: ProfilePlayer[] }) {
                     <li key={p.id} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".86rem" }}>
                       <span style={{ width: 16, color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: ".75rem" }}>{i + 1}</span>
                       <span style={{ width: 7, height: 7, borderRadius: 2, background: c1, flexShrink: 0 }} />
-                      <Link href={`/players/${p.id}/${p.slug}`} style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</Link>
+                      <Link href={`${base}/${p.id}/${p.slug}`} style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</Link>
                       <span style={{ fontFamily: "var(--font-cond)", color: "var(--gold)" }}>{p[b.key] as number}</span>
                     </li>
                   );

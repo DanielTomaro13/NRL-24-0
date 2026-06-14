@@ -3,7 +3,12 @@
  * Works on a fully static site — no backend needed. Daily games track a
  * Wordle-style streak and a guess distribution; score games track a best.
  */
+import { getComp } from "@/lib/comp";
+
 const KEY = "nrl240:progress:v1";
+
+// NRL keeps the bare key; NRLW streaks/bests are stored separately.
+const ck = (game: string) => (getComp() === "nrlw" ? `nrlw:${game}` : game);
 
 export interface DailyStats {
   played: number;
@@ -54,7 +59,7 @@ const emptyDaily = (): DailyStats => ({
 });
 
 export function getDaily(game: string): DailyStats {
-  return load().daily[game] ?? emptyDaily();
+  return load().daily[ck(game)] ?? emptyDaily();
 }
 
 export function todaysResult(game: string): DailyStats["lastResult"] {
@@ -64,7 +69,8 @@ export function todaysResult(game: string): DailyStats["lastResult"] {
 
 export function recordDaily(game: string, won: boolean, guesses: number): DailyStats {
   const s = load();
-  const d = s.daily[game] ?? emptyDaily();
+  const key = ck(game);
+  const d = s.daily[key] ?? emptyDaily();
   const today = todayKey();
   if (d.lastResult?.date === today) return d;
   d.played++;
@@ -78,23 +84,24 @@ export function recordDaily(game: string, won: boolean, guesses: number): DailyS
   }
   d.lastDate = today;
   d.lastResult = { date: today, won, guesses };
-  s.daily[game] = d;
+  s.daily[key] = d;
   save(s);
   return d;
 }
 
 export function getScore(game: string): ScoreStats {
-  return load().score[game] ?? { best: 0, plays: 0, lastScore: 0 };
+  return load().score[ck(game)] ?? { best: 0, plays: 0, lastScore: 0 };
 }
 
 export function recordScore(game: string, value: number, higherIsBetter = true): boolean {
   const s = load();
-  const cur = s.score[game] ?? { best: 0, plays: 0, lastScore: 0 };
+  const key = ck(game);
+  const cur = s.score[key] ?? { best: 0, plays: 0, lastScore: 0 };
   cur.plays++;
   cur.lastScore = value;
   const isBest = cur.plays === 1 || (higherIsBetter ? value > cur.best : value < cur.best);
   if (isBest) cur.best = value;
-  s.score[game] = cur;
+  s.score[key] = cur;
   save(s);
   return isBest;
 }

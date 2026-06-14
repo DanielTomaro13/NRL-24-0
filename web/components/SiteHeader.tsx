@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CompToggle from "@/components/CompToggle";
 
 const NAV = [
   { href: "/play", label: "Play" },
@@ -42,6 +43,7 @@ export default function SiteHeader() {
             NRL <span style={{ color: "var(--accent)" }}>24-0</span>
           </span>
         </Link>
+        <CompToggle />
         <nav className="nav-strip" aria-label="Primary">
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="nav-link">

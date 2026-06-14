@@ -6,6 +6,7 @@
  * numbers, so the NRL games are built on what the feeds *do* give us: club,
  * position, era span and real career stat lines.
  */
+import { dataBase, getComp } from "@/lib/comp";
 export interface GamePlayer {
   id: number;
   name: string;
@@ -30,14 +31,18 @@ export interface GamesData {
   strengthsBySeason: Record<string, number[]>;
 }
 
-let _cache: GamesData | null = null;
+/** A player with a URL slug — used by the players DB and profile pages. */
+export interface ProfilePlayer extends GamePlayer {
+  slug: string;
+}
+
+const _cache: Partial<Record<string, GamesData>> = {};
 export async function loadGamesData(): Promise<GamesData> {
-  if (_cache) return _cache;
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/data/games.json`, {
-    cache: "force-cache",
-  });
-  _cache = await res.json();
-  return _cache!;
+  const comp = getComp();
+  if (_cache[comp]) return _cache[comp]!;
+  const res = await fetch(`${dataBase(comp)}/games.json`, { cache: "force-cache" });
+  _cache[comp] = await res.json();
+  return _cache[comp]!;
 }
 
 /** Deterministic daily seed so "today's" puzzles are the same for everyone. */
