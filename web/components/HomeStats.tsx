@@ -32,7 +32,7 @@ export default function HomeStats({ initial }: { initial: HomeInitial }) {
   return (
     <>
       <section style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)" }} className="home-split">
-        <style>{`@media (max-width: 760px){ .home-split { grid-template-columns: 1fr !important; } }`}</style>
+        <style>{`@media (max-width: 760px){ .home-split { grid-template-columns: minmax(0,1fr) !important; } }`}</style>
         <div className="card" style={{ padding: "1.1rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
             <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{season} {compLabel(comp)} Ladder</h2>

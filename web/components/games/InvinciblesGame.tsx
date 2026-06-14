@@ -140,7 +140,7 @@ export default function InvinciblesGame() {
 
   return (
     <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,0.9fr)" }} className="inv-grid">
-      <style>{`@media (max-width: 800px){ .inv-grid { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`@media (max-width: 800px){ .inv-grid { grid-template-columns: minmax(0,1fr) !important; } }`}</style>
       <section className="card" style={{ padding: "1.25rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
           <span className="chip">{filled.length} / 9 drafted</span>

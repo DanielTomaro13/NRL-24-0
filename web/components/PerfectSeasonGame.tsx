@@ -268,7 +268,7 @@ export default function PerfectSeasonGame() {
 
   return (
     <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,0.9fr)" }} className="ps-grid">
-      <style>{`@media (max-width: 800px){ .ps-grid { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`@media (max-width: 800px){ .ps-grid { grid-template-columns: minmax(0,1fr) !important; } }`}</style>
 
       {/* LEFT: spin + roster */}
       <section className="card" style={{ padding: "1.25rem", minHeight: 420 }}>
@@ -364,24 +364,24 @@ export default function PerfectSeasonGame() {
                     {candidates.length === 0 ? "No players left from this draw." : `No ${POS_LABEL[posFilter] || posFilter} in this draw.`}
                   </p>
                 ) : (
-                  <div className="scroll-x" style={{ maxHeight: 340, overflowY: "auto", display: "grid", gap: 6 }}>
+                  <div style={{ maxHeight: 340, overflowY: "auto", overflowX: "hidden", display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 6 }}>
                     {shownCandidates.slice(0, 60).map((p) => {
                       const full = !playerPlaceable(p);
                       const posLabel = p.elig?.length > 1 ? p.elig.join("/") : p.pos;
                       return (
                         <button key={p.id} onClick={() => draft(p)} disabled={full}
-                          style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.4 : 1, textAlign: "left", width: "100%" }}>
-                          <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.4rem", minWidth: 32, textAlign: "center", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.4 : 1, textAlign: "left", width: "100%", minWidth: 0 }}>
+                          <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", minWidth: 28, textAlign: "center", color: p.rating >= 90 ? "var(--gold)" : "var(--text)", flexShrink: 0 }}>{p.rating}</span>
                           <span style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ display: "flex", gap: 7, alignItems: "center", fontWeight: 600, fontSize: ".92rem" }}>
-                              {p.name}
-                              <span className="chip" style={{ fontSize: ".62rem", padding: "1px 6px", color: "var(--gold)" }}>{posLabel}</span>
+                            <span style={{ display: "flex", gap: 6, alignItems: "center", fontWeight: 600, fontSize: ".88rem", minWidth: 0 }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{p.name}</span>
+                              <span className="chip" style={{ fontSize: ".58rem", padding: "1px 5px", color: "var(--gold)", flexShrink: 0 }}>{posLabel}</span>
                             </span>
-                            <span style={{ fontFamily: "var(--font-mono)", fontSize: ".68rem", color: "var(--muted)" }}>
+                            <span style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: ".64rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {p.tries}T · {p.runMetres}m · {p.tryAssists}TA · {p.tackles}tk
                             </span>
                           </span>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: ".62rem", color: "var(--accent)", whiteSpace: "nowrap" }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: ".6rem", color: "var(--accent)", whiteSpace: "nowrap", flexShrink: 0 }}>
                             {full ? "FULL" : mode === "cap" ? `$${(salaryFor(p.rating) / 1e6).toFixed(2)}M` : "DRAFT →"}
                           </span>
                         </button>
