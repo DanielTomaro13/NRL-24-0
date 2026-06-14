@@ -14,10 +14,11 @@ export default function CompToggle() {
         return (
           <button key={c.id} onClick={() => setComp(c.id)} aria-pressed={active}
             style={{
-              border: "none", cursor: "pointer", borderRadius: 999, padding: "4px 10px",
+              border: "none", cursor: "pointer", borderRadius: 999, padding: "8px 13px", minHeight: 36,
               fontFamily: "var(--font-cond)", fontSize: ".82rem", letterSpacing: ".04em",
               background: active ? "var(--accent)" : "transparent",
               color: active ? "#1a0a06" : "var(--muted)", fontWeight: 700,
+              touchAction: "manipulation",
             }}>
             {c.label}
           </button>

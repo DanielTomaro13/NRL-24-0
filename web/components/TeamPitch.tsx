@@ -7,26 +7,26 @@ import { clubColors } from "@/lib/clubs";
    (left, right). The pack sits near the bottom (the ruck); the fullback sweeps
    at the back (top). */
 const SPOTS_13: Record<string, [number, number][]> = {
-  FB: [[50, 9]],
-  WG: [[13, 27], [87, 27]],
-  CE: [[34, 31], [66, 31]],
-  FE: [[39, 48]],
-  HB: [[61, 48]],
-  PR: [[39, 73], [61, 73]],
-  HK: [[50, 63]],
-  "2R": [[20, 72], [80, 72]],
-  LK: [[50, 86]],
+  FB: [[50, 13]],
+  WG: [[16, 29], [84, 29]],
+  CE: [[35, 33], [65, 33]],
+  FE: [[40, 49]],
+  HB: [[60, 49]],
+  PR: [[40, 70], [60, 70]],
+  HK: [[50, 61]],
+  "2R": [[21, 70], [79, 70]],
+  LK: [[50, 82]],
 };
 const SPOTS_9: Record<string, [number, number][]> = {
-  FB: [[50, 10]],
-  WG: [[15, 27]],
-  CE: [[37, 31]],
-  FE: [[62, 44]],
-  HB: [[41, 45]],
+  FB: [[50, 13]],
+  WG: [[16, 29]],
+  CE: [[37, 33]],
+  FE: [[61, 47]],
+  HB: [[40, 47]],
   HK: [[50, 62]],
-  PR: [[62, 73]],
-  "2R": [[22, 71]],
-  LK: [[50, 86]],
+  PR: [[61, 72]],
+  "2R": [[23, 71]],
+  LK: [[50, 83]],
 };
 
 export default function TeamPitch({ slots, squad, mode }: { slots: Slot[]; squad: (PoolPlayer | null)[]; mode?: string | null }) {
@@ -44,22 +44,18 @@ export default function TeamPitch({ slots, squad, mode }: { slots: Slot[]; squad
 
   return (
     <div>
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "3 / 4",
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "1px solid var(--border)",
-          // mowed-pitch stripes
-          background:
-            "repeating-linear-gradient(0deg, #11321f 0 12.5%, #143a25 12.5% 25%)",
-          boxShadow: "inset 0 0 60px rgba(0,0,0,0.45)",
-        }}
-      >
-        {/* field markings */}
-        <Markings />
+      <div style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", minHeight: 360 }}>
+        {/* clipped field background + markings (separate layer so markers never clip) */}
+        <div
+          style={{
+            position: "absolute", inset: 0, borderRadius: 12, overflow: "hidden",
+            border: "1px solid var(--border)",
+            background: "repeating-linear-gradient(0deg, #11321f 0 12.5%, #143a25 12.5% 25%)",
+            boxShadow: "inset 0 0 60px rgba(0,0,0,0.45)",
+          }}
+        >
+          <Markings />
+        </div>
         {field.map(({ slot, p, xy }, i) => (
           <Marker key={i} num={slot.n} code={slot.code} p={p} x={xy[0]} y={xy[1]} />
         ))}
@@ -102,12 +98,14 @@ function Marker({ num, code, p, x, y }: { num: number; code: string; p: PoolPlay
       >
         {p ? num : code}
       </span>
-      <span style={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.05, maxWidth: "100%" }}>
-        <span style={{ fontSize: ".6rem", fontWeight: 600, color: "#eef2ec", textShadow: "0 1px 2px rgba(0,0,0,0.8)", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {p ? surname(p.name) : code}
+      {p && (
+        <span style={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.05, maxWidth: "100%" }}>
+          <span style={{ fontSize: ".58rem", fontWeight: 600, color: "#eef2ec", textShadow: "0 1px 2px rgba(0,0,0,0.85)", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {surname(p.name)}
+          </span>
+          <span style={{ fontFamily: "var(--font-cond)", fontSize: ".66rem", color: p.rating >= 90 ? "#e8c469" : "#cdd8d0", textShadow: "0 1px 2px rgba(0,0,0,0.85)" }}>{p.rating}</span>
         </span>
-        {p && <span style={{ fontFamily: "var(--font-cond)", fontSize: ".68rem", color: p.rating >= 90 ? "#e8c469" : "#cdd8d0", textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}>{p.rating}</span>}
-      </span>
+      )}
     </div>
   );
 }
