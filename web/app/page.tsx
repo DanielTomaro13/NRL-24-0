@@ -3,8 +3,17 @@ import HomeStats from "@/components/HomeStats";
 import AdUnit from "@/components/AdUnit";
 import { AD_SLOTS } from "@/lib/ads";
 import { GAMES } from "@/lib/gamelist";
+import { serverResults } from "@/lib/serverdata";
+import { allPlayers } from "@/lib/playerdb";
 
 export default function Home() {
+  const r = serverResults("nrl");
+  const season = r.seasons[0];
+  const initial = {
+    season,
+    ladder: r.laddersBySeason[season]?.slice(0, 5) ?? [],
+    featured: allPlayers("nrl").sort((a, b) => b.fame - a.fame).slice(0, 6),
+  };
   return (
     <div style={{ display: "grid", gap: "2.5rem" }}>
       {/* hero */}
@@ -47,8 +56,8 @@ export default function Home() {
       {/* home ad — after the games grid, before stats; never over gameplay */}
       <AdUnit slot={AD_SLOTS.home} />
 
-      {/* ladder + hall of fame + featured (comp-aware) */}
-      <HomeStats />
+      {/* ladder + hall of fame + featured (NRL server-rendered, NRLW on toggle) */}
+      <HomeStats initial={initial} />
     </div>
   );
 }

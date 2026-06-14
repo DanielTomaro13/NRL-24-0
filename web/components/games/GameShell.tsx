@@ -15,11 +15,10 @@ export default function GameShell({
     "@context": "https://schema.org",
     "@type": "VideoGame",
     name: `${title} — NRL 24-0`,
-    url: `${SITE.url}/games/${slug}`,
-    applicationCategory: "Game",
+    url: `${SITE.url}/games/${slug}/`,
     operatingSystem: "Web",
     gamePlatform: "Web browser",
-    publisher: { "@type": "Organization", name: SITE.name },
+    publisher: { "@id": `${SITE.url}/#org` },
     offers: { "@type": "Offer", price: "0", priceCurrency: "AUD" },
   };
   return (

@@ -2,14 +2,22 @@
 import { useEffect, useState } from "react";
 import { loadResults, type Results, type MatchResult } from "@/lib/data";
 import { clubColors } from "@/lib/clubs";
+import { getComp } from "@/lib/comp";
 
-export default function FixturesView() {
+export interface FixturesInitial { seasons: string[]; latestSeason: string; matches: MatchResult[] }
+
+/** Latest NRL season is server-rendered (SEO); the full set + NRLW load client-side. */
+export default function FixturesView({ initial }: { initial: FixturesInitial }) {
   const [data, setData] = useState<Results | null>(null);
-  const [season, setSeason] = useState("");
+  const [season, setSeason] = useState(initial.latestSeason);
   const [club, setClub] = useState("All clubs");
-  useEffect(() => { loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); }); }, []);
-  if (!data) return <p style={{ color: "var(--muted)" }}>Loading fixtures…</p>;
-  const all = data.bySeason[season] ?? [];
+  useEffect(() => {
+    const c = getComp();
+    loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); });
+    if (c === "nrlw") setSeason(""); // will be set by loadResults above
+  }, []);
+  const seasons = data?.seasons ?? initial.seasons;
+  const all = data ? (data.bySeason[season] ?? []) : initial.matches;
   const clubs = ["All clubs", ...Array.from(new Set(all.flatMap((m) => [m.home, m.away]))).sort()];
   const matches = club === "All clubs" ? all : all.filter((m) => m.home === club || m.away === club);
   const byRound = new Map<number, MatchResult[]>();
@@ -22,7 +30,7 @@ export default function FixturesView() {
         <label style={{ fontSize: ".82rem", color: "var(--muted)" }}>Season</label>
         <select value={season} onChange={(e) => { setSeason(e.target.value); setClub("All clubs"); }}
           style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>
-          {data.seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+          {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <select value={club} onChange={(e) => setClub(e.target.value)}
           style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>

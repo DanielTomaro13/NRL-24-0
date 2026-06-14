@@ -71,6 +71,15 @@ const orgLd = {
     "query-input": "required name=search_term_string",
   },
 };
+const orgLdEntity = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${SITE.url}/#org`,
+  name: SITE.name,
+  url: SITE.url,
+  logo: { "@type": "ImageObject", url: `${SITE.url}/icon.svg` },
+  sameAs: ["https://afl23-0.com", "https://footballinvincibles.com"],
+};
 const appLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
@@ -78,6 +87,7 @@ const appLd = {
   url: SITE.url,
   applicationCategory: "GameApplication",
   operatingSystem: "Web",
+  publisher: { "@id": `${SITE.url}/#org` },
   offers: { "@type": "Offer", price: "0", priceCurrency: "AUD" },
   inLanguage: "en-AU",
 };
@@ -95,6 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AdUnit slot={AD_SLOTS.inline} />
         </div>
         <SiteFooter />
+        <JsonLd data={orgLdEntity} />
         <JsonLd data={orgLd} />
         <JsonLd data={appLd} />
         {/* Google AdSense loader — a literal <script> (React hoists it into

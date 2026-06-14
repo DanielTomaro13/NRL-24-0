@@ -18,7 +18,7 @@ export default function PlayerProfile({ p, comp }: { p: ProfilePlayer; comp: Com
     name: p.name,
     jobTitle: `${p.posName} (rugby league)`,
     affiliation: { "@type": "SportsTeam", name: p.club },
-    url: `${SITE.url}${base}/${p.id}/${p.slug}`,
+    url: `${SITE.url}${base}/${p.id}/${p.slug}/`,
   };
   const stat = (label: string, value: string | number) => (
     <div style={{ padding: ".7rem .9rem", background: "var(--panel-2)", borderRadius: 10, textAlign: "center" }}>

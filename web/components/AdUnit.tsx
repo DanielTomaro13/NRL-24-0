@@ -29,8 +29,8 @@ export default function AdUnit({
   if (!slot) return null;
 
   return (
-    <div style={{ margin: "1.5rem auto", textAlign: "center", ...style }}>
-      <div style={{ fontSize: ".58rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>
+    <div style={{ margin: "1.5rem auto", textAlign: "center", minHeight: 120, ...style }}>
+      <div style={{ fontSize: ".64rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>
         Advertisement
       </div>
       <ins

@@ -1,26 +1,30 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { loadMeta, loadResults, type LadderRow } from "@/lib/data";
-import { loadGamesData, type GamePlayer } from "@/lib/games-data";
+import { loadResults, type LadderRow } from "@/lib/data";
+import { loadGamesData, type ProfilePlayer } from "@/lib/games-data";
 import { getComp, compLabel, type Comp } from "@/lib/comp";
 import { clubColors } from "@/lib/clubs";
 import { slugify } from "@/lib/format";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
 
-/** Home ladder + featured players, comp-aware so the header toggle switches them. */
-export default function HomeStats() {
+export interface HomeInitial { season: string; ladder: LadderRow[]; featured: ProfilePlayer[] }
+
+/** Home ladder + featured players. NRL renders server-side (SEO); NRLW swaps in
+ *  client-side when the header toggle is set. */
+export default function HomeStats({ initial }: { initial: HomeInitial }) {
   const [comp, setC] = useState<Comp>("nrl");
-  const [season, setSeason] = useState("");
-  const [ladder, setLadder] = useState<LadderRow[]>([]);
-  const [featured, setFeatured] = useState<GamePlayer[]>([]);
+  const [season, setSeason] = useState(initial.season);
+  const [ladder, setLadder] = useState<LadderRow[]>(initial.ladder);
+  const [featured, setFeatured] = useState<ProfilePlayer[]>(initial.featured);
 
   useEffect(() => {
-    setC(getComp());
-    loadMeta().then((m) => setSeason(m.latestSeason));
-    loadResults().then((r) => { const s = r.seasons[0]; setLadder(r.laddersBySeason[s]?.slice(0, 5) ?? []); });
-    loadGamesData().then((d) => setFeatured(d.players.slice(0, 6)));
+    const c = getComp(); setC(c);
+    if (c === "nrlw") {
+      loadResults().then((r) => { const s = r.seasons[0]; setSeason(s); setLadder(r.laddersBySeason[s]?.slice(0, 5) ?? []); });
+      loadGamesData().then((d) => setFeatured(d.players.slice(0, 6).map((p) => ({ ...p, slug: slugify(p.name) }))));
+    }
   }, []);
 
   const base = comp === "nrlw" ? "/w/players" : "/players";
@@ -67,7 +71,7 @@ export default function HomeStats() {
           {featured.map((p) => {
             const [c1] = clubColors(p.club);
             return (
-              <Link key={p.id} href={`${base}/${p.id}/${slugify(p.name)}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
+              <Link key={p.id} href={`${base}/${p.id}/${p.slug}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
                 <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <strong>{p.name}</strong>
                   <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>

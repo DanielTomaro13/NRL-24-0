@@ -1,4 +1,5 @@
 import { pageMeta } from "@/lib/seo";
+import { serverResults } from "@/lib/serverdata";
 import LadderView from "@/components/LadderView";
 
 export const metadata = pageMeta({
@@ -17,7 +18,7 @@ export default function LadderPage() {
           Standings for every season, computed from real match results.
         </p>
       </header>
-      <LadderView />
+      <LadderView initial={(() => { const r = serverResults("nrl"); return { seasons: r.seasons, laddersBySeason: r.laddersBySeason }; })()} />
     </div>
   );
 }

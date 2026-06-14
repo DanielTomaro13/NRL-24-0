@@ -21,9 +21,12 @@ export function pageMeta(opts: {
   keywords?: string[];
   image?: string;
 }): Metadata {
-  const url = SITE.url + (opts.path ?? "");
+  const url = SITE.url + (opts.path ?? "") + (opts.path && !opts.path.endsWith("/") ? "/" : "");
   const description = opts.description ?? SITE.description;
   const title = opts.title;
+  // every page falls back to the generated site OG card so deep-page shares
+  // (games, player profiles, ladder…) always have an image, not a blank card.
+  const image = opts.image ?? `${SITE.url}/opengraph-image`;
   return {
     title,
     description,
@@ -35,7 +38,7 @@ export function pageMeta(opts: {
       url,
       siteName: SITE.name,
       type: "website",
-      images: opts.image ? [{ url: opts.image }] : undefined,
+      images: [{ url: image, width: 1200, height: 630 }],
       locale: "en_AU",
     },
     twitter: {
@@ -43,6 +46,7 @@ export function pageMeta(opts: {
       title,
       description,
       site: SITE.twitter,
+      images: [image],
     },
   };
 }
@@ -55,7 +59,7 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
       "@type": "ListItem",
       position: i + 1,
       name: it.name,
-      item: SITE.url + it.path,
+      item: SITE.url + it.path + (it.path.endsWith("/") ? "" : "/"),
     })),
   };
 }

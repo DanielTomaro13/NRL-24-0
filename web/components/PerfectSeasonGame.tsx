@@ -219,7 +219,8 @@ export default function PerfectSeasonGame() {
   }, [candidates, posFilter]);
 
   const noDraftable = !!reels.club && !spinning &&
-    (candidates.length === 0 || candidates.every((c) => !playerPlaceable(c)));
+    (candidates.length === 0 || candidates.every((c) =>
+      !playerPlaceable(c) || (mode === "cap" && salary + salaryFor(c.rating) > SALARY_CAP)));
 
   // Auto-spin once when arriving via the Quick Nine shortcut (/play?quick=1).
   useEffect(() => {
@@ -496,8 +497,9 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
     if (name.trim()) setName(name.trim());
     const score = mode === "spoon" ? 24 - rec.wins : rec.wins;
     submitScore(`perfect-${mode}`, score, true);
-    // also feed the rolling daily board shown on the home page
-    submitScore(`daily-${todayKey()}`, score, true);
+    // the rolling daily "Top Sides" board is win-based; Wooden Spoon (which
+    // optimises for losses) must not pollute it with inverted scores.
+    if (mode !== "spoon") submitScore(`daily-${todayKey()}`, rec.wins, true);
     setSaved(true);
   }
 

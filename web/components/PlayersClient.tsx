@@ -5,18 +5,16 @@ import { loadGamesData, type ProfilePlayer } from "@/lib/games-data";
 import { getComp, compLabel, type Comp } from "@/lib/comp";
 import { slugify } from "@/lib/format";
 
-/** Renders the NRL list server-side (good SEO, the default), and swaps to NRLW
- *  client-side only when the competition toggle is set to NRLW. */
+/** Renders a top-150 NRL slice server-side (good SEO + small HTML), then loads
+ *  the full set client-side for search — or the NRLW set when toggled. */
 export default function PlayersClient({ initial }: { initial: ProfilePlayer[] }) {
   const [players, setPlayers] = useState<ProfilePlayer[]>(initial);
   const [comp, setC] = useState<Comp>("nrl");
   useEffect(() => {
-    const c = getComp(); setC(c);
-    if (c === "nrlw") {
-      loadGamesData().then((d) =>
-        setPlayers([...d.players].sort((a, b) => b.fame - a.fame).map((p) => ({ ...p, slug: slugify(p.name) })))
-      );
-    }
+    setC(getComp());
+    loadGamesData().then((d) =>
+      setPlayers([...d.players].sort((a, b) => b.fame - a.fame).map((p) => ({ ...p, slug: slugify(p.name) })))
+    );
   }, []);
   return (
     <>

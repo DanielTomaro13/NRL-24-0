@@ -74,7 +74,10 @@ export async function topScores(
       const r = await fetch(
         `${ENDPOINT}/leaderboard?game=${encodeURIComponent(game)}&limit=${limit}`
       );
-      if (r.ok) return await r.json();
+      if (r.ok) {
+        const j = await r.json();
+        if (Array.isArray(j)) return j; // guard against an unexpected shape
+      }
     } catch {
       /* fall through */
     }
