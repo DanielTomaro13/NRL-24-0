@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { topScores, isGlobal, type ScoreEntry } from "@/lib/leaderboard";
 import { getName, setName, getDaily } from "@/lib/progress";
+import { getComp, compLabel, type Comp } from "@/lib/comp";
 
 const BOARDS = [
   { game: "perfect-classic", label: "Perfect Season — Full 13", high: true },
@@ -20,10 +21,12 @@ const DAILY = [
 export default function LeaderboardView() {
   const [boards, setBoards] = useState<Record<string, ScoreEntry[]>>({});
   const [name, setNm] = useState("");
+  const [comp, setC] = useState<Comp>("nrl");
   const [streaks, setStreaks] = useState<Record<string, { cur: number; max: number }>>({});
 
   useEffect(() => {
     setNm(getName());
+    setC(getComp());
     Promise.all(BOARDS.map((b) => topScores(b.game, true, 10).then((r) => [b.game, r] as const)))
       .then((pairs) => setBoards(Object.fromEntries(pairs)));
     const s: Record<string, { cur: number; max: number }> = {};
@@ -35,6 +38,12 @@ export default function LeaderboardView() {
 
   return (
     <div style={{ display: "grid", gap: "1.5rem" }}>
+      <div className="card" style={{ padding: ".7rem 1rem", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <span className="chip" style={{ color: "var(--gold)", fontWeight: 700 }}>{compLabel(comp)}</span>
+        <span style={{ fontSize: ".85rem", color: "var(--muted)" }}>
+          Showing the {compLabel(comp)} leaderboards — NRL and NRLW have separate boards. Switch competition in the header.
+        </span>
+      </div>
       <div className="card" style={{ padding: "1rem", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: ".85rem", color: "var(--muted)" }}>Your coach name</span>
         <input value={name} onChange={(e) => setNm(e.target.value)} maxLength={16} placeholder="Anonymous"

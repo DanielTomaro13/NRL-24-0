@@ -30,6 +30,21 @@ export default function AboutPage() {
       </header>
 
       <section className="card" style={{ padding: "1.25rem" }}>
+        <h2 style={{ marginTop: 0 }}>About this site</h2>
+        <p style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+          NRL 24-0 is an independent, free-to-play rugby-league game and stats site built and maintained by
+          <strong style={{ color: "var(--text)" }}> Daniel Tomaro</strong>. Spin for a club and era, draft an all-time NRL
+          (or NRLW) side and chase a flawless 24–0 season — then take on a vault of mini-games, browse the ladder,
+          fixtures, stat leaders and a profile for every player. It&apos;s part of the &ldquo;0 Series&rdquo; alongside{" "}
+          <a href="https://afl23-0.com" style={{ color: "var(--accent)" }}>AFL 23-0</a> and{" "}
+          <a href="https://footballinvincibles.com" style={{ color: "var(--accent)" }}>Football Invincibles</a>.
+          It is unofficial and not affiliated with or endorsed by the NRL, NRLW or any club. Get in touch on the{" "}
+          <Link href="/contact" style={{ color: "var(--accent)" }}>Contact page</Link>; data handling is covered in our{" "}
+          <Link href="/privacy" style={{ color: "var(--accent)" }}>Privacy Policy</Link>.
+        </p>
+      </section>
+
+      <section className="card" style={{ padding: "1.25rem" }}>
         <h2 style={{ marginTop: 0 }}>The data</h2>
         <p style={{ color: "var(--muted)", lineHeight: 1.6 }}>
           Player ratings are built from <strong style={{ color: "var(--text)" }}>Champion Data</strong> match-centre feeds

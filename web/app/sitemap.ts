@@ -21,6 +21,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE.url}/stats/`, priority: 0.7, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/leaderboard/`, priority: 0.6, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/about/`, priority: 0.5, changeFrequency: "monthly", lastModified: now },
+    { url: `${SITE.url}/privacy/`, priority: 0.3, changeFrequency: "yearly", lastModified: now },
+    { url: `${SITE.url}/contact/`, priority: 0.3, changeFrequency: "yearly", lastModified: now },
   ];
   const games: MetadataRoute.Sitemap = GAMES.map((g) => ({
     url: `${SITE.url}/games/${g}/`,

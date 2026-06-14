@@ -2,14 +2,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { topScores, type ScoreEntry, isGlobal } from "@/lib/leaderboard";
+import { getComp, compLabel, type Comp } from "@/lib/comp";
 
 export default function HomeLeaderboard() {
   const [rows, setRows] = useState<ScoreEntry[] | null>(null);
-  useEffect(() => { topScores("perfect-classic", true, 5).then(setRows); }, []);
+  const [comp, setC] = useState<Comp>("nrl");
+  useEffect(() => { setC(getComp()); topScores("perfect-classic", true, 5).then(setRows); }, []);
   return (
     <div className="card" style={{ padding: "1.1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-        <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Hall of Fame</h2>
+        <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{compLabel(comp)} Hall of Fame</h2>
         <Link href="/leaderboard" style={{ fontSize: ".8rem", color: "var(--accent)" }}>View all →</Link>
       </div>
       {rows === null ? (

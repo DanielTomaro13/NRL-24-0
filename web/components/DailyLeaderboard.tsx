@@ -3,18 +3,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { topScores, type ScoreEntry, isGlobal } from "@/lib/leaderboard";
 import { todayKey } from "@/lib/progress";
+import { getComp, compLabel, type Comp } from "@/lib/comp";
 
 /** Today's top perfect-season records — a rolling daily board on the home page. */
 export default function DailyLeaderboard() {
   const [rows, setRows] = useState<ScoreEntry[] | null>(null);
+  const [comp, setC] = useState<Comp>("nrl");
   const today = todayKey();
-  useEffect(() => { topScores(`daily-${today}`, true, 5).then(setRows); }, [today]);
+  useEffect(() => { setC(getComp()); topScores(`daily-${today}`, true, 5).then(setRows); }, [today]);
   const nice = new Date(today).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
 
   return (
     <div className="card" style={{ padding: "1.1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-        <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Today&apos;s Top Sides</h2>
+        <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Today&apos;s Top {compLabel(comp)} Sides</h2>
         <span className="chip" style={{ fontSize: ".64rem", color: "var(--gold)" }}>{nice}</span>
       </div>
       {rows === null ? (

@@ -13,7 +13,8 @@ const ENDPOINT = process.env.NEXT_PUBLIC_LEADERBOARD_URL?.replace(/\/$/, "");
 const LKEY = "nrl240:lb:v1";
 
 // NRL keeps the bare game key; NRLW boards are namespaced so they stay separate.
-const compKey = (game: string) => (getComp() === "nrlw" ? `nrlw:${game}` : game);
+// Use a hyphen (not a colon) so the key survives the Worker's key sanitiser.
+const compKey = (game: string) => (getComp() === "nrlw" ? `nrlw-${game}` : game);
 
 export interface ScoreEntry {
   name: string;
