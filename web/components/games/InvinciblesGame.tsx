@@ -11,6 +11,7 @@ import { POS_CODES, POS_LABEL } from "@/lib/format";
 import { clubColors } from "@/lib/clubs";
 import { submitScore } from "@/lib/leaderboard";
 import { getName, setName } from "@/lib/progress";
+import { tick, settle } from "@/lib/sound";
 import Confetti from "@/components/Confetti";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -51,12 +52,14 @@ export default function InvinciblesGame() {
     const eras = Array.from(new Set(pool.filter((p) => p.club === club && undrafted(p)).map((p) => p.era)));
     const target = { club, era: eras.length ? rnd(eras) : null };
     let t = 0;
+    const done = () => { clearInterval(iv); setReels(target); setSpinning(false); spinRef.current = false; settle(); };
     const iv = setInterval(() => {
       t++;
+      tick();
       setReels({ club: rnd(clubs), era: null });
-      if (t >= 12) { clearInterval(iv); setReels(target); setSpinning(false); spinRef.current = false; }
+      if (t >= 12) done();
     }, 70);
-    setTimeout(() => { clearInterval(iv); setReels(target); setSpinning(false); spinRef.current = false; }, 1400);
+    setTimeout(done, 1400);
   }
 
   const slotFull = (code: string) => !SLOTS.some((s, i) => s.code === code && !squad[i]);

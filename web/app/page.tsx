@@ -3,6 +3,7 @@ import { serverMeta, serverResults } from "@/lib/serverdata";
 import { notablePlayers } from "@/lib/playerdb";
 import { clubColors } from "@/lib/clubs";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
+import DailyLeaderboard from "@/components/DailyLeaderboard";
 import { GAMES } from "@/lib/gamelist";
 
 export default function Home() {
@@ -24,7 +25,8 @@ export default function Home() {
           home-and-away season. Then take on a vault of rugby-league mini-games.
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link href="/play" className="btn btn-primary">Play Perfect Season</Link>
+          <Link href="/play?quick=1" className="btn btn-primary">⚡ Quick Nine — spin now</Link>
+          <Link href="/play" className="btn">All modes</Link>
           <Link href="/games" className="btn">Mini-games</Link>
           <Link href="/ladder" className="btn">{meta.latestSeason} Ladder</Link>
         </div>
@@ -75,7 +77,10 @@ export default function Home() {
             </tbody>
           </table>
         </div>
-        <HomeLeaderboard />
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <DailyLeaderboard />
+          <HomeLeaderboard />
+        </div>
       </section>
 
       {/* featured players */}

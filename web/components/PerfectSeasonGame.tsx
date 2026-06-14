@@ -16,7 +16,8 @@ import { recordFromRating, simulateSeason, verdict } from "@/lib/sim";
 import { POS_LABEL } from "@/lib/format";
 import { clubColors } from "@/lib/clubs";
 import { submitScore } from "@/lib/leaderboard";
-import { getName, setName } from "@/lib/progress";
+import { getName, setName, todayKey } from "@/lib/progress";
+import { tick, settle, fanfare, isMuted, toggleMuted } from "@/lib/sound";
 import Confetti from "@/components/Confetti";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -33,9 +34,11 @@ export default function PerfectSeasonGame() {
   const [spinning, setSpinning] = useState(false);
   const [rerolls, setRerolls] = useState({ club: 0, era: 0 });
   const [notice, setNotice] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
   const spinningRef = useRef(false);
   const flickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSpin = useRef(false);
   useEffect(() => () => {
     if (flickRef.current) clearInterval(flickRef.current);
     if (settleRef.current) clearTimeout(settleRef.current);
@@ -45,6 +48,12 @@ export default function PerfectSeasonGame() {
     Promise.all([loadPool(), loadMeta(), loadStrengths()])
       .then(([p, , s]) => { setPool(p); setStrengths(s.bySeason); })
       .catch(() => setErr("Couldn't load the player pool. Try refreshing."));
+    setMuted(isMuted());
+    // Quick Nine shortcut: /play?quick=1 jumps straight in and auto-spins.
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("quick")) {
+      autoSpin.current = true;
+      start("quick");
+    }
   }, []);
 
   const slots = mode ? SQUADS[mode] : [];
@@ -92,12 +101,14 @@ export default function PerfectSeasonGame() {
       setReels(target);
       setSpinning(false);
       spinningRef.current = false;
+      settle();
     };
     let ticks = 0;
     const max = 13 + Math.floor(Math.random() * 7);
     if (flickRef.current) clearInterval(flickRef.current);
     flickRef.current = setInterval(() => {
       ticks++;
+      tick();
       const fc = lock.club ? target.club : rnd(allClubs.length ? allClubs : [target.club]);
       let fe: string | null;
       if (lock.era) fe = target.era;
@@ -173,6 +184,16 @@ export default function PerfectSeasonGame() {
   const noDraftable = !!reels.club && !spinning &&
     (candidates.length === 0 || candidates.every((c) => slotFull(c.pos)));
 
+  // Auto-spin once when arriving via the Quick Nine shortcut (/play?quick=1).
+  useEffect(() => {
+    if (autoSpin.current && mode === "quick" && pool && !reels.club && !spinningRef.current && picksMade === 0) {
+      autoSpin.current = false;
+      spinFresh();
+    }
+  }, [mode, pool]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggleSound() { setMuted(toggleMuted()); }
+
   /* ----- render ----- */
   if (err) return <p style={{ color: "var(--danger)" }}>{err}</p>;
   if (!pool) return <p style={{ color: "var(--muted)" }}>Loading the all-time pool…</p>;
@@ -215,9 +236,15 @@ export default function PerfectSeasonGame() {
       <section className="card" style={{ padding: "1.25rem", minHeight: 420 }}>
         {!done ? (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8 }}>
               <span className="chip">{picksMade} / {total} drafted</span>
-              <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.2rem", textTransform: "uppercase", color: "var(--gold)" }}>{MODE_INFO[mode].name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button onClick={toggleSound} aria-label={muted ? "Unmute" : "Mute"} title={muted ? "Unmute" : "Mute"}
+                  style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: 2 }}>
+                  {muted ? "🔇" : "🔊"}
+                </button>
+                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.2rem", textTransform: "uppercase", color: "var(--gold)" }}>{MODE_INFO[mode].name}</span>
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
@@ -384,12 +411,14 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
     return simulateSeason(avg, pool.length ? pool : Object.values(strengths).flat());
   }, [squad, avg, strengths]);
 
-  useEffect(() => { setNm(getName()); }, []);
+  useEffect(() => { setNm(getName()); if (perfect) fanfare(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function save() {
     if (name.trim()) setName(name.trim());
     const score = mode === "spoon" ? 24 - rec.wins : rec.wins;
     submitScore(`perfect-${mode}`, score, true);
+    // also feed the rolling daily board shown on the home page
+    submitScore(`daily-${todayKey()}`, score, true);
     setSaved(true);
   }
 
