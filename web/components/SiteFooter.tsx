@@ -41,6 +41,7 @@ export default function SiteFooter() {
             <Link href="/about">How it works</Link>
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/contact">Contact</Link>
+            <a href="https://ko-fi.com/danieltomaro" target="_blank" rel="noopener" style={{ color: "var(--gold)" }}>☕ Support on Ko-fi</a>
           </nav>
         </div>
       </div>

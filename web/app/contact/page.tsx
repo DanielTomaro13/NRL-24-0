@@ -31,6 +31,16 @@ export default function ContactPage() {
         </p>
       </section>
 
+      <section className="card" style={{ padding: "1.25rem", display: "grid", gap: 8 }}>
+        <h2 style={{ fontSize: "1.15rem", margin: 0 }}>Support the site ☕</h2>
+        <p style={{ color: "var(--muted)", lineHeight: 1.6, margin: 0 }}>
+          {SITE.name} is free and ad-supported. If you&apos;d like to chip in toward the data and hosting,
+          you can{" "}
+          <a href="https://ko-fi.com/danieltomaro" target="_blank" rel="noopener" style={{ color: "var(--gold)", fontWeight: 700 }}>buy me a coffee on Ko-fi</a>.
+          Hugely appreciated, never required.
+        </p>
+      </section>
+
       <section style={{ display: "grid", gap: 8 }}>
         <h2 style={{ fontSize: "1.15rem", margin: 0 }}>Good to know</h2>
         <ul style={{ color: "var(--muted)", lineHeight: 1.65, margin: 0, paddingLeft: "1.1rem", display: "grid", gap: 6, fontSize: ".92rem" }}>
