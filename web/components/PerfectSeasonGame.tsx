@@ -19,6 +19,7 @@ import { submitScore } from "@/lib/leaderboard";
 import { getName, setName, todayKey } from "@/lib/progress";
 import { tick, settle, fanfare, isMuted, toggleMuted } from "@/lib/sound";
 import Confetti from "@/components/Confetti";
+import ShareButtons from "@/components/ShareButtons";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const ORDER: Mode[] = ["quick", "classic", "full17", "cap", "gauntlet", "spoon"];
@@ -490,6 +491,22 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
             <button className="btn btn-primary" onClick={save}>Save to Hall of Fame</button>
           </>
         ) : <span className="chip" style={{ color: "var(--accent-2)" }}>✓ Saved to the Hall of Fame</span>}
+      </div>
+
+      <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px dashed var(--border)" }}>
+        <div style={{ fontSize: ".72rem", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>
+          Share your side
+        </div>
+        <ShareButtons
+          data={{
+            record: `${rec.wins}–${rec.losses}`,
+            verdict: v.t,
+            avg,
+            modeName: MODE_INFO[mode].name,
+            players: squad.map((p) => ({ n: p.name, pos: p.pos, club: p.club, era: p.era, rating: p.rating })),
+          }}
+          caption={`I built a ${rec.wins}–${rec.losses} all-time NRL side (${v.t}) in NRL 24-0!`}
+        />
       </div>
 
       <div style={{ marginTop: 16, display: "flex", gap: 16, justifyContent: "center" }}>

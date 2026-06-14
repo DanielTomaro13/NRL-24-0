@@ -46,8 +46,12 @@ export default function DailyStatsPanel({ game, shareText }: { game: string; sha
           </div>
         </div>
       )}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <button className="btn btn-primary" onClick={share}>{copied ? "Copied!" : "Share result"}</button>
+        <a className="btn" style={{ borderColor: "#1d9bf0" }} target="_blank" rel="noopener"
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`}>𝕏</a>
+        <a className="btn" style={{ borderColor: "#1877f2" }} target="_blank" rel="noopener"
+          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://nrl24-0.com")}`}>f</a>
         <span style={{ fontSize: ".8rem", color: "var(--muted)" }}>Next puzzle in {cd}</span>
       </div>
     </div>
