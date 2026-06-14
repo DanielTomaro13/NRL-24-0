@@ -10,25 +10,32 @@ const FILTERS = ["All", "Back", "Halves", "Forward"];
 export default function PlayersBrowser({ players }: { players: ProfilePlayer[] }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
+  const [club, setClub] = useState("All clubs");
+  const clubs = useMemo(() => ["All clubs", ...Array.from(new Set(players.map((p) => p.club))).sort()], [players]);
   const shown = useMemo(() => {
     const query = q.trim().toLowerCase();
     return players
       .filter((p) => filter === "All" || POS_GROUP[p.pos] === filter)
+      .filter((p) => club === "All clubs" || p.club === club)
       .filter((p) => !query || p.name.toLowerCase().includes(query) || p.club.toLowerCase().includes(query))
       .slice(0, 150);
-  }, [players, q, filter]);
+  }, [players, q, filter, club]);
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search players or clubs…"
         style={{ width: "100%", padding: ".7rem .9rem", borderRadius: 10, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }} />
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
         {FILTERS.map((f) => (
           <button key={f} onClick={() => setFilter(f)} className="chip"
             style={{ cursor: "pointer", borderColor: filter === f ? "var(--accent)" : "var(--border)", color: filter === f ? "var(--text)" : "var(--muted)" }}>
             {f}
           </button>
         ))}
+        <select value={club} onChange={(e) => setClub(e.target.value)}
+          style={{ marginLeft: "auto", padding: ".4rem .6rem", borderRadius: 999, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", fontSize: ".8rem" }}>
+          {clubs.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
       <div className="grid-cards">
         {shown.map((p) => {

@@ -12,7 +12,7 @@ import { loadMeta, loadPool, loadStrengths } from "@/lib/data";
 import {
   Mode, MODE_INFO, PoolPlayer, REROLLS, SQUADS, SALARY_CAP, salaryFor,
 } from "@/lib/types";
-import { recordFromRating, simulateSeason, verdict } from "@/lib/sim";
+import { seasonRecord, simulateSeason, verdict } from "@/lib/sim";
 import { POS_LABEL } from "@/lib/format";
 import { clubColors } from "@/lib/clubs";
 import { submitScore } from "@/lib/leaderboard";
@@ -437,17 +437,21 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
   mode: Mode; squad: PoolPlayer[]; avg: number; strengths: Record<string, number[]>;
   onReset: () => void; onMode: () => void;
 }) {
-  const rec = recordFromRating(avg);
-  const v = verdict(rec.wins);
-  const perfect = mode === "spoon" ? rec.wins === 0 : rec.wins === 24;
   const [name, setNm] = useState("");
   const [saved, setSaved] = useState(false);
 
+  // deterministic seed from the actual players so a given side always plays
+  // out the same season — 24–0 is a genuine ~5% event for a near-perfect squad
+  const seed = useMemo(() => squad.reduce((h, p) => (Math.imul(h, 31) + p.pid) >>> 0, 7), [squad]);
   const sim = useMemo(() => {
     const eras = Array.from(new Set(squad.map((p) => p.era)));
     const pool = eras.flatMap((e) => strengths[e] || []);
-    return simulateSeason(avg, pool.length ? pool : Object.values(strengths).flat());
-  }, [squad, avg, strengths]);
+    return simulateSeason(avg, pool.length ? pool : Object.values(strengths).flat(), seed);
+  }, [squad, avg, strengths, seed]);
+  const rec = { wins: sim.wins, losses: sim.losses };
+  const v = verdict(rec.wins);
+  const perfect = mode === "spoon" ? rec.wins === 0 : rec.wins === 24;
+  const goalPct = mode === "spoon" ? sim.spoonPct : sim.perfectPct;
 
   useEffect(() => { setNm(getName()); if (perfect) fanfare(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -479,7 +483,7 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
 
       <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 18, fontSize: ".8rem", color: "var(--muted)", flexWrap: "wrap" }}>
         <span>Squad rating <strong style={{ color: "var(--text)" }}>{avg.toFixed(1)}</strong></span>
-        <span>24–0 odds <strong style={{ color: "var(--text)" }}>{sim.perfectPct < 0.1 ? "<0.1" : sim.perfectPct.toFixed(1)}%</strong></span>
+        <span>{mode === "spoon" ? "0–24" : "24–0"} odds <strong style={{ color: "var(--text)" }}>{goalPct < 0.1 ? "<0.1" : goalPct.toFixed(1)}%</strong></span>
         <span>Stronger than <strong style={{ color: "var(--text)" }}>{sim.realPercentile}%</strong> of real sides</span>
       </div>
 

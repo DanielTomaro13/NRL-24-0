@@ -6,20 +6,27 @@ import { clubColors } from "@/lib/clubs";
 export default function FixturesView() {
   const [data, setData] = useState<Results | null>(null);
   const [season, setSeason] = useState("");
+  const [club, setClub] = useState("All clubs");
   useEffect(() => { loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); }); }, []);
   if (!data) return <p style={{ color: "var(--muted)" }}>Loading fixtures…</p>;
-  const matches = data.bySeason[season] ?? [];
+  const all = data.bySeason[season] ?? [];
+  const clubs = ["All clubs", ...Array.from(new Set(all.flatMap((m) => [m.home, m.away]))).sort()];
+  const matches = club === "All clubs" ? all : all.filter((m) => m.home === club || m.away === club);
   const byRound = new Map<number, MatchResult[]>();
   for (const m of matches) { const k = m.round || 0; if (!byRound.has(k)) byRound.set(k, []); byRound.get(k)!.push(m); }
   const rounds = [...byRound.keys()].sort((a, b) => b - a);
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <label style={{ fontSize: ".82rem", color: "var(--muted)" }}>Season</label>
-        <select value={season} onChange={(e) => setSeason(e.target.value)}
+        <select value={season} onChange={(e) => { setSeason(e.target.value); setClub("All clubs"); }}
           style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>
           {data.seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={club} onChange={(e) => setClub(e.target.value)}
+          style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>
+          {clubs.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       {rounds.map((rd) => (
