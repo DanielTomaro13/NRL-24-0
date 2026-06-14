@@ -20,6 +20,8 @@ import { getName, setName, todayKey } from "@/lib/progress";
 import { tick, settle, fanfare, isMuted, toggleMuted } from "@/lib/sound";
 import Confetti from "@/components/Confetti";
 import ShareButtons from "@/components/ShareButtons";
+import AdUnit from "@/components/AdUnit";
+import { AD_SLOTS } from "@/lib/ads";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const ORDER: Mode[] = ["quick", "classic", "full17", "cap", "gauntlet", "spoon"];
@@ -552,6 +554,8 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
         <button onClick={onReset} style={linkBtn}>draft a new side</button>
         <button onClick={onMode} style={linkBtn}>change mode</button>
       </div>
+
+      <AdUnit slot={AD_SLOTS.result} />
     </div>
   );
 }

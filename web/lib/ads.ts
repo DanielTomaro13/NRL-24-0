@@ -12,8 +12,12 @@
 export const AD_CLIENT = "ca-pub-2087141992057731";
 
 export const AD_SLOTS = {
-  /** responsive banner shown at the bottom of every page */
+  /** home page unit */
+  home: "5789788385",
+  /** Perfect Season result screen unit (shown after the game is over) */
+  result: "6838809461",
+  /** responsive banner at the bottom of every page (no unit yet) */
   inline: "",
-  /** unit shown below the interactive game (after gameplay, never inside it) */
+  /** unit below each mini-game, after gameplay (no unit yet) */
   game: "",
 };

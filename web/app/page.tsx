@@ -4,6 +4,8 @@ import { notablePlayers } from "@/lib/playerdb";
 import { clubColors } from "@/lib/clubs";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
+import AdUnit from "@/components/AdUnit";
+import { AD_SLOTS } from "@/lib/ads";
 import { GAMES } from "@/lib/gamelist";
 
 export default function Home() {
@@ -49,6 +51,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* home ad — after the games grid, before stats; never over gameplay */}
+      <AdUnit slot={AD_SLOTS.home} />
 
       {/* ladder + hall of fame */}
       <section style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)" }} className="home-split">
