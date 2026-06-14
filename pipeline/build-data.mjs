@@ -225,13 +225,12 @@ async function buildComp(label, comps) {
     pool.push({
       id: rec.id, pid: rec.pid, name: rec.name, club: rec.club, era: rec.era,
       pos, posName: POS_CODE_LABEL[pos] || "Lock", elig, rating: rateFromStats(avg),
-      g: rec.games,
+      // Only the stats the client actually renders on the draft card ship in the
+      // pool (the heaviest payload). lineBreaks/tackleBreaks/games were unused.
       tries: +(avg.tries || 0).toFixed(2),
       runMetres: Math.round(avg.runMetres || avg.metresGained || 0),
-      lineBreaks: +(avg.lineBreaks || 0).toFixed(2),
       tryAssists: +(avg.tryAssists || 0).toFixed(2),
       tackles: Math.round(avg.tackles || 0),
-      tackleBreaks: +(avg.tackleBreaks || 0).toFixed(2),
     });
   }
   pool.sort((a, b) => b.rating - a.rating);

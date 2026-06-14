@@ -10,13 +10,10 @@ export interface PoolPlayer {
   posName: string;
   elig: string[];   // every position the player genuinely played that season
   rating: number;
-  g: number;
   tries: number;
   runMetres: number;
-  lineBreaks: number;
   tryAssists: number;
   tackles: number;
-  tackleBreaks: number;
 }
 
 export interface Meta {

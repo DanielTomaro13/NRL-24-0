@@ -108,6 +108,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={orgLdEntity} />
         <JsonLd data={orgLd} />
         <JsonLd data={appLd} />
+        {/* Warm up the third-party origins used on every page so the ad +
+            analytics requests skip the DNS/TLS round-trips. */}
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://static.cloudflareinsights.com" />
+        <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
+        <link rel="dns-prefetch" href="https://tpc.googlesyndication.com" />
         {/* Google AdSense loader — a literal <script> (React hoists it into
             <head>) so the AdSense crawler sees the real snippet, not a preload */}
         <script
