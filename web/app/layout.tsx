@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import SisterSites from "@/components/SisterSites";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import JsonLd from "@/components/JsonLd";
+import AdUnit from "@/components/AdUnit";
+import { AD_CLIENT, AD_SLOTS } from "@/lib/ads";
 import { SITE } from "@/lib/seo";
 
 export const viewport: Viewport = {
@@ -84,9 +87,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="container-x" style={{ paddingTop: "1.5rem", minHeight: "60vh" }}>
           {children}
         </main>
+        <div className="container-x">
+          <AdUnit slot={AD_SLOTS.inline} />
+        </div>
         <SiteFooter />
         <JsonLd data={orgLd} />
         <JsonLd data={appLd} />
+        {/* Google AdSense loader — enables Auto Ads + the manual units above */}
+        <Script
+          id="adsbygoogle-init"
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+        {/* Cloudflare Web Analytics — privacy-friendly, no cookies */}
+        <Script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          strategy="afterInteractive"
+          data-cf-beacon='{"token": "4d55fdcc7b524f92885f31490208e4b2"}'
+        />
       </body>
     </html>
   );

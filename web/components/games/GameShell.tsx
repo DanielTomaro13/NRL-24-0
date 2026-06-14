@@ -1,5 +1,7 @@
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
+import AdUnit from "@/components/AdUnit";
+import { AD_SLOTS } from "@/lib/ads";
 import { SITE } from "@/lib/seo";
 
 /** Server wrapper giving every game a consistent, SEO-friendly frame. */
@@ -39,6 +41,7 @@ export default function GameShell({
           {howTo.map((h, i) => <li key={i}>{h}</li>)}
         </ol>
       </section>
+      <AdUnit slot={AD_SLOTS.game} />
     </div>
   );
 }

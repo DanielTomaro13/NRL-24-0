@@ -200,10 +200,16 @@ async function main() {
     if (rec.games < 1) continue;
     const avg = {};
     Object.keys(rec.sums).forEach((k) => (avg[k] = rec.sums[k] / rec.games));
-    const pos = Object.entries(rec.posCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "LK";
+    const counts = Object.entries(rec.posCounts).sort((a, b) => b[1] - a[1]);
+    const pos = counts[0]?.[0] || "LK";
+    // positions the player genuinely played this season (>=20% of games, min 2),
+    // so a one-position player has a single eligible slot and never needs a choice
+    const thresh = Math.max(2, rec.games * 0.2);
+    const elig = counts.filter(([, c]) => c >= thresh).map(([code]) => code);
+    if (!elig.includes(pos)) elig.unshift(pos);
     pool.push({
       id: rec.id, pid: rec.pid, name: rec.name, club: rec.club, era: rec.era,
-      pos, posName: POS_CODE_LABEL[pos] || "Lock", rating: rateFromStats(avg),
+      pos, posName: POS_CODE_LABEL[pos] || "Lock", elig, rating: rateFromStats(avg),
       g: rec.games,
       tries: +(avg.tries || 0).toFixed(2),
       runMetres: Math.round(avg.runMetres || avg.metresGained || 0),

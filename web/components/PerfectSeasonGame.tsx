@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadMeta, loadPool, loadStrengths } from "@/lib/data";
 import {
-  Mode, MODE_INFO, PoolPlayer, REROLLS, SQUADS, SALARY_CAP, salaryFor, fitsSlot,
+  Mode, MODE_INFO, PoolPlayer, REROLLS, SQUADS, SALARY_CAP, salaryFor,
 } from "@/lib/types";
 import { recordFromRating, simulateSeason, verdict } from "@/lib/sim";
 import { POS_LABEL } from "@/lib/format";
@@ -34,6 +34,7 @@ export default function PerfectSeasonGame() {
   const [spinning, setSpinning] = useState(false);
   const [rerolls, setRerolls] = useState({ club: 0, era: 0 });
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingPick, setPendingPick] = useState<{ player: PoolPlayer; codes: string[] } | null>(null);
   const [muted, setMuted] = useState(false);
   const spinningRef = useRef(false);
   const flickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -93,6 +94,7 @@ export default function PerfectSeasonGame() {
     if (spinningRef.current) return;
     spinningRef.current = true;
     setSpinning(true);
+    setPendingPick(null);
     const allClubs = clubsWithPlayers();
     const finalize = () => {
       if (flickRef.current) clearInterval(flickRef.current);
@@ -147,8 +149,20 @@ export default function PerfectSeasonGame() {
     animateTo({ club: reels.club, era: rnd(es) }, { club: true });
   }
 
-  const slotFull = useCallback((code: string) =>
-    !slots.some((s, i) => fitsSlot(s, code) && !squad[i]), [slots, squad]);
+  // can this player still be slotted somewhere? (any eligible position or bench)
+  const playerPlaceable = useCallback((p: PoolPlayer) => {
+    const elig = p.elig?.length ? p.elig : [p.pos];
+    return slots.some((s, i) => !squad[i] && (s.code === "INT" || elig.includes(s.code)));
+  }, [slots, squad]);
+
+  function placeInSlot(p: PoolPlayer, code: string) {
+    const slot = slots.findIndex((s, i) => s.code === code && !squad[i]);
+    if (slot === -1) return;
+    setSquad((sq) => { const next = sq.slice(); next[slot] = { ...p, pos: code, posName: POS_LABEL[code] || p.posName }; return next; });
+    setNotice(null);
+    setPendingPick(null);
+    setReels({ club: null, era: null });
+  }
 
   function draft(p: PoolPlayer) {
     if (spinningRef.current || done) return;
@@ -156,14 +170,18 @@ export default function PerfectSeasonGame() {
       setNotice(`Over the cap — ${p.name} would blow your salary cap. Draft someone cheaper.`);
       return;
     }
-    const slot = slots.findIndex((s, i) => fitsSlot(s, p.pos) && !squad[i]);
-    if (slot === -1) {
-      setNotice(`${POS_LABEL[p.pos] || "That position"} is full — draft a different player.`);
+    const elig = p.elig?.length ? p.elig : [p.pos];
+    // distinct eligible positions that still have an open slot
+    const openCodes = elig.filter((c) => slots.some((s, i) => s.code === c && !squad[i]));
+    if (openCodes.length >= 2) {
+      // genuinely multi-position with a real choice — ask which slot
+      setPendingPick({ player: p, codes: openCodes });
       return;
     }
-    setSquad((sq) => { const next = sq.slice(); next[slot] = { ...p }; return next; });
-    setNotice(null);
-    setReels({ club: null, era: null });
+    if (openCodes.length === 1) { placeInSlot(p, openCodes[0]); return; }
+    // none of their positions open — drop onto the bench if this mode has one
+    if (slots.some((s, i) => s.code === "INT" && !squad[i])) { placeInSlot(p, "INT"); return; }
+    setNotice(`${POS_LABEL[p.pos] || "That position"} is full — draft a different player.`);
   }
 
   function start(m: Mode) {
@@ -172,6 +190,7 @@ export default function PerfectSeasonGame() {
     setReels({ club: null, era: null });
     setRerolls({ club: 0, era: 0 });
     setNotice(null);
+    setPendingPick(null);
   }
   function reset() {
     if (!mode) return;
@@ -179,10 +198,11 @@ export default function PerfectSeasonGame() {
     setReels({ club: null, era: null });
     setRerolls({ club: 0, era: 0 });
     setNotice(null);
+    setPendingPick(null);
   }
 
   const noDraftable = !!reels.club && !spinning &&
-    (candidates.length === 0 || candidates.every((c) => slotFull(c.pos)));
+    (candidates.length === 0 || candidates.every((c) => !playerPlaceable(c)));
 
   // Auto-spin once when arriving via the Quick Nine shortcut (/play?quick=1).
   useEffect(() => {
@@ -279,6 +299,22 @@ export default function PerfectSeasonGame() {
               </div>
             )}
 
+            {pendingPick && (
+              <div style={{ marginTop: 12, padding: "12px", borderRadius: 8, background: "rgba(232,196,105,0.1)", border: "1px solid var(--gold)" }}>
+                <div style={{ fontSize: ".85rem", marginBottom: 8 }}>
+                  <strong>{pendingPick.player.name}</strong> can play a few spots — where do they slot?
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {pendingPick.codes.map((c) => (
+                    <button key={c} className="btn" style={{ minHeight: 38 }} onClick={() => placeInSlot(pendingPick.player, c)}>
+                      {POS_LABEL[c] || c}
+                    </button>
+                  ))}
+                  <button className="btn" style={{ minHeight: 38, color: "var(--muted)" }} onClick={() => setPendingPick(null)}>Cancel</button>
+                </div>
+              </div>
+            )}
+
             {reels.club && !spinning && (
               <div style={{ marginTop: 16, borderTop: "1px dashed var(--border)", paddingTop: 14 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
@@ -291,7 +327,8 @@ export default function PerfectSeasonGame() {
                 ) : (
                   <div className="scroll-x" style={{ maxHeight: 360, overflowY: "auto", display: "grid", gap: 6 }}>
                     {candidates.slice(0, 60).map((p) => {
-                      const full = slotFull(p.pos);
+                      const full = !playerPlaceable(p);
+                      const posLabel = p.elig?.length > 1 ? p.elig.join("/") : p.pos;
                       return (
                         <button key={p.id} onClick={() => draft(p)} disabled={full}
                           style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.4 : 1, textAlign: "left", width: "100%" }}>
@@ -299,14 +336,14 @@ export default function PerfectSeasonGame() {
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ display: "flex", gap: 7, alignItems: "center", fontWeight: 600, fontSize: ".92rem" }}>
                               {p.name}
-                              <span className="chip" style={{ fontSize: ".62rem", padding: "1px 6px", color: "var(--gold)" }}>{p.pos}</span>
+                              <span className="chip" style={{ fontSize: ".62rem", padding: "1px 6px", color: "var(--gold)" }}>{posLabel}</span>
                             </span>
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: ".68rem", color: "var(--muted)" }}>
                               {p.tries}T · {p.runMetres}m · {p.tryAssists}TA · {p.tackles}tk
                             </span>
                           </span>
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: ".62rem", color: "var(--accent)", whiteSpace: "nowrap" }}>
-                            {full ? `${p.pos} FULL` : mode === "cap" ? `$${(salaryFor(p.rating) / 1e6).toFixed(2)}M` : `${p.pos} →`}
+                            {full ? "FULL" : mode === "cap" ? `$${(salaryFor(p.rating) / 1e6).toFixed(2)}M` : "DRAFT →"}
                           </span>
                         </button>
                       );

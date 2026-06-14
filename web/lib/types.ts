@@ -6,8 +6,9 @@ export interface PoolPlayer {
   name: string;
   club: string;
   era: string;
-  pos: string;      // FB | WG | CE | FE | HB | PR | HK | 2R | LK
+  pos: string;      // FB | WG | CE | FE | HB | PR | HK | 2R | LK (primary)
   posName: string;
+  elig: string[];   // every position the player genuinely played that season
   rating: number;
   g: number;
   tries: number;
