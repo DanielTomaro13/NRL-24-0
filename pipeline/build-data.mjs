@@ -145,7 +145,9 @@ async function buildComp(label, comps) {
   const clubsBySeason = {};          // season -> Set(club)
 
   for (const comp of comps) {
-    const season = String(comp.season || "");
+    // Use the leading token of the comp name as the era so two comps that share
+    // a season year stay distinct (e.g. NRLW's "2022 NRLW" and "2022B NRLW").
+    const season = String(comp.name || "").trim().split(/\s+/)[0] || String(comp.season || "");
     let fixture;
     try { fixture = await poolFetch(`${API}/data/${comp.id}/fixture.json`); }
     catch (e) { console.log(`  ! skip ${season}: ${e.message}`); continue; }
@@ -249,7 +251,7 @@ async function buildComp(label, comps) {
     }
     c.clubCounts[p.club] = (c.clubCounts[p.club] || 0) + p.g;
     c.posCounts[p.pos] = (c.posCounts[p.pos] || 0) + p.g;
-    c.seasons.add(Number(p.era));
+    c.seasons.add(parseInt(p.era, 10));
     c.apps += p.g;
     c.tries += p.tries * p.g;
     c.tryAssists += p.tryAssists * p.g;
@@ -279,10 +281,9 @@ async function buildComp(label, comps) {
   console.log(`✓ games: ${gamePlayers.length} unique career players`);
 
   /* ---- per-season ladder + strength distribution ------------------------- */
-  // dedupe seasons (e.g. NRLW ran two comps in 2022, both keyed as "2022")
-  const seasons = [...new Set(comps.map((c) => String(c.season)))]
-    .filter((s) => resultsBySeason[s]?.length)
-    .sort((a, b) => Number(b) - Number(a));
+  const seasons = Object.keys(resultsBySeason)
+    .filter((s) => resultsBySeason[s].length)
+    .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
   const strengthsBySeason = {};
   const laddersBySeason = {};
   for (const s of seasons) {

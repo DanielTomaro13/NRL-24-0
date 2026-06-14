@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { pageMeta } from "@/lib/seo";
-import { notablePlayers, playerById } from "@/lib/playerdb";
+import { allPlayers, playerById } from "@/lib/playerdb";
 import PlayerProfile from "@/components/PlayerProfile";
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return notablePlayers("nrl").map((p) => ({ id: String(p.id), slug: p.slug }));
+  // every player shown in the browser needs a page (static export → no fallback)
+  return allPlayers("nrl").map((p) => ({ id: String(p.id), slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; slug: string }> }) {

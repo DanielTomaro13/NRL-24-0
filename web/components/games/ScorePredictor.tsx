@@ -11,11 +11,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { recordScore, getScore } from "@/lib/progress";
 import { submitScore } from "@/lib/leaderboard";
 import { clubColors } from "@/lib/clubs";
+import { dataBase, getComp } from "@/lib/comp";
 
 const GAME = "score-predictor";
 const ROUNDS = 10;
 const MAX_SCORE = ROUNDS * 5;
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 interface Match {
   round: number;
@@ -165,7 +165,7 @@ export default function ScorePredictor() {
     let alive = true;
     (async () => {
       try {
-        const res = await fetch(`${BASE}/data/results.json`, { cache: "force-cache" });
+        const res = await fetch(`${dataBase(getComp())}/results.json`, { cache: "force-cache" });
         const data: ResultsData = await res.json();
         if (!alive) return;
         const s = data.seasons[0];

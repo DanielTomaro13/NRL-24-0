@@ -2,17 +2,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { loadResults, type Results } from "@/lib/data";
-import { clubColors, clubAbbr } from "@/lib/clubs";
+import { clubColors } from "@/lib/clubs";
+import { getComp, compLabel, type Comp } from "@/lib/comp";
 
 export default function LadderView() {
   const [data, setData] = useState<Results | null>(null);
   const [season, setSeason] = useState<string>("");
-  useEffect(() => { loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); }); }, []);
+  const [comp, setC] = useState<Comp>("nrl");
+  useEffect(() => { setC(getComp()); loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); }); }, []);
   if (!data) return <p style={{ color: "var(--muted)" }}>Loading ladder…</p>;
   const rows = data.laddersBySeason[season] ?? [];
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span className="chip" style={{ color: "var(--gold)" }}>{compLabel(comp)}</span>
         <label style={{ fontSize: ".82rem", color: "var(--muted)" }}>Season</label>
         <select value={season} onChange={(e) => setSeason(e.target.value)}
           style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>
