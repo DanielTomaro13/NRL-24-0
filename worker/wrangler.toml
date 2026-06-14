@@ -2,9 +2,6 @@ name = "nrl240-leaderboard"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
 
-# Create the namespace once with:
-#   npx wrangler kv namespace create BOARD
-# then paste the returned id below and run `npx wrangler deploy`.
 kv_namespaces = [
-  { binding = "BOARD", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
+  { binding = "BOARD", id = "4d4bff37721745caa514bac5884a3403" }
 ]
