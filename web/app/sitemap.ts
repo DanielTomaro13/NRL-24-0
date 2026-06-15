@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/seo";
 import { allPlayers } from "@/lib/playerdb";
+import { allClubs, clubSlug } from "@/lib/teamdb";
 
 export const dynamic = "force-static";
 
@@ -16,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE.url}/play/`, priority: 0.9, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/games/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/ladder/`, priority: 0.8, changeFrequency: "daily", lastModified: now },
+    { url: `${SITE.url}/teams/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/players/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/fixtures/`, priority: 0.7, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/stats/`, priority: 0.7, changeFrequency: "weekly", lastModified: now },
@@ -30,6 +32,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "weekly",
     lastModified: now,
   }));
+  const teams: MetadataRoute.Sitemap = [
+    ...allClubs("nrl").map((c) => `${SITE.url}/teams/${clubSlug(c)}/`),
+    `${SITE.url}/w/teams/`,
+    ...allClubs("nrlw").map((c) => `${SITE.url}/w/teams/${clubSlug(c)}/`),
+  ].map((url) => ({ url, priority: 0.6, changeFrequency: "weekly" as const, lastModified: now }));
   const players: MetadataRoute.Sitemap = allPlayers("nrl").map((p) => ({
     url: `${SITE.url}/players/${p.id}/${p.slug}/`,
     priority: 0.5,
@@ -42,5 +49,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "weekly",
     lastModified: now,
   }));
-  return [...top, ...games, ...players, ...playersW];
+  return [...top, ...games, ...teams, ...players, ...playersW];
 }

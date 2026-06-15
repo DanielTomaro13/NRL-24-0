@@ -3,7 +3,7 @@ import { breadcrumbJsonLd, SITE } from "@/lib/seo";
 import type { ProfilePlayer } from "@/lib/games-data";
 import { compLabel, type Comp } from "@/lib/comp";
 import { clubColors } from "@/lib/clubs";
-import { POS_GROUP } from "@/lib/format";
+import { POS_GROUP, slugify } from "@/lib/format";
 import JsonLd from "@/components/JsonLd";
 
 /** Shared player profile, used by both the NRL and NRLW profile routes. */
@@ -11,6 +11,7 @@ export default function PlayerProfile({ p, comp }: { p: ProfilePlayer; comp: Com
   const [c1, c2] = clubColors(p.club);
   const L = compLabel(comp);
   const base = comp === "nrlw" ? "/w/players" : "/players";
+  const teamBase = comp === "nrlw" ? "/w/teams" : "/teams";
 
   const personLd = {
     "@context": "https://schema.org",
@@ -38,7 +39,8 @@ export default function PlayerProfile({ p, comp }: { p: ProfilePlayer; comp: Com
             <h1 style={{ margin: 0, fontSize: "2rem" }}>{p.name}</h1>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6, color: "var(--muted)" }}>
               <span style={{ width: 12, height: 12, borderRadius: 3, background: c1, border: `1px solid ${c2}` }} />
-              {p.club} · {p.posName} · {POS_GROUP[p.pos]} · {L}
+              <Link href={`${teamBase}/${slugify(p.club)}`} style={{ color: "var(--accent)" }}>{p.club}</Link>
+              {" · "}{p.posName} · {POS_GROUP[p.pos]} · {L}
             </div>
           </div>
           <div style={{ textAlign: "center" }}>

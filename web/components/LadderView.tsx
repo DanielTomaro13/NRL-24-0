@@ -4,6 +4,7 @@ import Link from "next/link";
 import { loadResults, type LadderRow } from "@/lib/data";
 import { clubColors } from "@/lib/clubs";
 import { getComp, compLabel, type Comp } from "@/lib/comp";
+import { slugify } from "@/lib/format";
 
 export interface LadderData { seasons: string[]; laddersBySeason: Record<string, LadderRow[]> }
 
@@ -36,9 +37,12 @@ export default function LadderView({ initial }: { initial: LadderData }) {
               return (
                 <tr key={t.club} style={i < 8 ? { background: "rgba(95,208,138,0.05)" } : undefined}>
                   <td style={{ color: i < 8 ? "var(--accent-2)" : "var(--muted)", fontWeight: 700 }}>{i + 1}</td>
-                  <td style={{ display: "flex", gap: 8, alignItems: "center", whiteSpace: "nowrap" }}>
-                    <span style={{ width: 9, height: 9, borderRadius: 2, background: c1, flexShrink: 0 }} />
-                    <span title={t.club}>{t.club}</span>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <Link href={`${comp === "nrlw" ? "/w/teams" : "/teams"}/${slugify(t.club)}`}
+                      title={t.club} style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text)" }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: c1, flexShrink: 0 }} />
+                      <span>{t.club}</span>
+                    </Link>
                   </td>
                   <td>{t.p}</td><td>{t.w}</td><td>{t.d}</td><td>{t.l}</td>
                   <td>{t.pf}</td><td>{t.pa}</td>
