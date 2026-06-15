@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { loadResults, type Results, type MatchResult } from "@/lib/data";
 import { clubColors } from "@/lib/clubs";
+import { getComp, type Comp } from "@/lib/comp";
 
 export interface FixturesInitial { seasons: string[]; latestSeason: string; matches: MatchResult[] }
 
@@ -10,11 +12,14 @@ export default function FixturesView({ initial }: { initial: FixturesInitial }) 
   const [data, setData] = useState<Results | null>(null);
   const [season, setSeason] = useState(initial.latestSeason);
   const [club, setClub] = useState("All clubs");
+  const [comp, setC] = useState<Comp>("nrl");
   useEffect(() => {
+    setC(getComp());
     // loadResults() is comp-aware; fetch the full set (all seasons) for the
     // dropdown — the server-rendered `initial` only carries the latest season.
     loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); });
   }, []);
+  const matchBase = comp === "nrlw" ? "/w/matches" : "/matches";
   const seasons = data?.seasons ?? initial.seasons;
   const all = data ? (data.bySeason[season] ?? []) : initial.matches;
   const clubs = ["All clubs", ...Array.from(new Set(all.flatMap((m) => [m.home, m.away]))).sort()];
@@ -42,7 +47,7 @@ export default function FixturesView({ initial }: { initial: FixturesInitial }) 
             {rd ? `Round ${rd}` : "Other"}
           </div>
           <div className="grid-cards">
-            {byRound.get(rd)!.map((m, i) => <MatchCard key={i} m={m} />)}
+            {byRound.get(rd)!.map((m, i) => <MatchCard key={m.id || i} m={m} base={matchBase} />)}
           </div>
         </div>
       ))}
@@ -50,14 +55,21 @@ export default function FixturesView({ initial }: { initial: FixturesInitial }) 
   );
 }
 
-function MatchCard({ m }: { m: MatchResult }) {
+function MatchCard({ m, base }: { m: MatchResult; base: string }) {
   const [h1] = clubColors(m.home), [a1] = clubColors(m.away);
   const homeWin = m.hs > m.as, awayWin = m.as > m.hs;
-  return (
-    <div className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6 }}>
+  const inner = (
+    <>
       <Row color={h1} name={m.home} score={m.hs} win={homeWin} />
       <Row color={a1} name={m.away} score={m.as} win={awayWin} />
-    </div>
+    </>
+  );
+  if (!m.id) return <div className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6 }}>{inner}</div>;
+  return (
+    <Link href={`${base}/${m.id}`} className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6 }}>
+      {inner}
+      <span style={{ fontSize: ".68rem", color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".05em" }}>Box score →</span>
+    </Link>
   );
 }
 function Row({ color, name, score, win }: { color: string; name: string; score: number; win: boolean }) {

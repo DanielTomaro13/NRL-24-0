@@ -82,6 +82,20 @@ function matchPoints(s) {
   return g("tries") * 4 + (g("conversions") + g("penaltyGoals")) * 2 + g("fieldGoals") * 1;
 }
 
+/* a compact, display-ready box-score line for one player in one match */
+function boxEntry(p, name) {
+  const g = (k) => Number(p[k]) || 0;
+  return {
+    pid: p.playerId, name, pos: String(p.position || "").trim(),
+    pts: matchPoints(p),
+    t: g("tries"), g: g("conversions") + g("penaltyGoals"), fg: g("fieldGoals"),
+    ta: g("tryAssists"), lb: g("lineBreaks"),
+    rm: Math.round(g("runMetres") || g("metresGained")),
+    tk: g("tackles"), tb: g("tackleBreaks"), mt: g("missedTackles"),
+    off: g("offloads"), err: g("errors"),
+  };
+}
+
 const POS_NAME_TO_CODE = {
   Fullback: "FB", Wing: "WG", Centre: "CE",
   "Five-Eighth": "FE", "Five-eighth": "FE", Halfback: "HB",
@@ -141,8 +155,9 @@ async function buildComp(label, comps) {
   const outDir = join(OUT_DIR, label);
 
   const agg = new Map();             // playerKey -> per player-season aggregate
-  const resultsBySeason = {};        // season -> [{round, home, away, hs, as}]
+  const resultsBySeason = {};        // season -> [{id, round, home, away, hs, as}]
   const clubsBySeason = {};          // season -> Set(club)
+  const boxscores = [];              // one self-contained box score per match
 
   for (const comp of comps) {
     // Use the leading token of the comp name as the era so two comps that share
@@ -177,6 +192,7 @@ async function buildComp(label, comps) {
       });
 
       const teamScore = {}; // squadId -> points (summed from player scoring)
+      const homeLineup = [], awayLineup = [];
       arr(ms?.playerStats?.player).forEach((p) => {
         const key = `${p.playerId}-${season}`;
         const club =
@@ -196,15 +212,26 @@ async function buildComp(label, comps) {
         if (code) rec.posCounts[code] = (rec.posCounts[code] || 0) + 1;
         STAT_KEYS.forEach((k) => { rec.sums[k] = (rec.sums[k] || 0) + (Number(p[k]) || 0); });
         teamScore[p.squadId] = (teamScore[p.squadId] || 0) + matchPoints(p);
+
+        const be = boxEntry(p, names[p.playerId] || `Player ${p.playerId}`);
+        if (p.squadId === m.homeSquadId) homeLineup.push(be);
+        else if (p.squadId === m.awaySquadId) awayLineup.push(be);
       });
 
       const home = m.homeSquadName, away = m.awaySquadName;
       const hs = teamScore[m.homeSquadId] ?? 0, as = teamScore[m.awaySquadId] ?? 0;
+      const round = Number(m.round || m.roundNumber || 0) || 0;
       if (home && away) {
-        resultsBySeason[season].push({
-          round: Number(m.round || m.roundNumber || 0) || 0,
-          home, away, hs, as,
-        });
+        const id = String(m.matchId);
+        resultsBySeason[season].push({ id, round, home, away, hs, as });
+        if (homeLineup.length && awayLineup.length) {
+          boxscores.push({
+            id, comp: label, season, round, home, away, hs, as,
+            date: m.matchTime || m.localStartTime || null,
+            venue: m.venueName || m.venue || null,
+            homeLineup, awayLineup,
+          });
+        }
       }
     }
   }
@@ -225,8 +252,11 @@ async function buildComp(label, comps) {
     pool.push({
       id: rec.id, pid: rec.pid, name: rec.name, club: rec.club, era: rec.era,
       pos, posName: POS_CODE_LABEL[pos] || "Lock", elig, rating: rateFromStats(avg),
-      // Only the stats the client actually renders on the draft card ship in the
-      // pool (the heaviest payload). lineBreaks/tackleBreaks/games were unused.
+      // g + lineBreaks are needed by the career aggregator below but are NOT
+      // shipped to the client — they're stripped from pool.json at write time
+      // (POOL_SHIP) to keep the heaviest payload lean. tackleBreaks is unused.
+      g: rec.games,
+      lineBreaks: +(avg.lineBreaks || 0).toFixed(2),
       tries: +(avg.tries || 0).toFixed(2),
       runMetres: Math.round(avg.runMetres || avg.metresGained || 0),
       tryAssists: +(avg.tryAssists || 0).toFixed(2),
@@ -321,17 +351,27 @@ async function buildComp(label, comps) {
   const results = { seasons, bySeason: resultsBySeason, laddersBySeason };
   const strengths = { bySeason: strengthsBySeason };
 
+  // strip the career-only fields so the shipped pool stays lean (see pool.push)
+  const poolShipped = pool.map(({ g, lineBreaks, ...rest }) => rest);
+
   await Promise.all([
     writeFile(join(outDir, "meta.json"), JSON.stringify(meta)),
-    writeFile(join(outDir, "pool.json"), JSON.stringify(pool)),
+    writeFile(join(outDir, "pool.json"), JSON.stringify(poolShipped)),
     writeFile(join(outDir, "games.json"), JSON.stringify(games)),
     writeFile(join(outDir, "results.json"), JSON.stringify(results)),
     writeFile(join(outDir, "strengths.json"), JSON.stringify(strengths)),
   ]);
 
+  // one self-contained box-score file per match, lazy-loaded by the match page
+  const matchesDir = join(outDir, "matches");
+  await mkdir(matchesDir, { recursive: true });
+  await mapLimit(boxscores, 64, (b) =>
+    writeFile(join(matchesDir, `${b.id}.json`), JSON.stringify(b))
+  );
+
   console.log(
-    `✓ wrote ${outDir} — ${pool.length} cards, ${gamePlayers.length} players, ` +
-    `${seasons.length} seasons in ${((Date.now() - t0) / 1000).toFixed(1)}s`
+    `✓ wrote ${outDir} — ${poolShipped.length} cards, ${gamePlayers.length} players, ` +
+    `${seasons.length} seasons, ${boxscores.length} box scores in ${((Date.now() - t0) / 1000).toFixed(1)}s`
   );
 }
 

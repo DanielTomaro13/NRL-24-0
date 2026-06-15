@@ -6,7 +6,7 @@ export interface LadderRow {
   club: string; p: number; w: number; l: number; d: number;
   pf: number; pa: number; pts: number; pd: number;
 }
-export interface MatchResult { round: number; home: string; away: string; hs: number; as: number; }
+export interface MatchResult { id: string; round: number; home: string; away: string; hs: number; as: number; }
 export interface Results {
   seasons: string[];
   bySeason: Record<string, MatchResult[]>;
