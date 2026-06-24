@@ -1,6 +1,22 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { BOOKS, type CompareData, type CompareRow } from "@/lib/model";
+import { Th, useSort } from "@/components/model/sortable";
+
+type EvRow = CompareRow & { _ev: number; _kelly: number };
+const evVal = (r: EvRow, k: string): string | number | null => {
+  switch (k) {
+    case "player": return r.player;
+    case "market": return r.market;
+    case "line": return r.line;
+    case "model": return r.my_p;
+    case "fair": return r.my_fair;
+    case "best": return r.best;
+    case "book": return r.best_book;
+    case "kelly": return r._kelly;
+    default: return r._ev; // ev / stake
+  }
+};
 
 /** Expected value of backing the best price: model prob p at decimal price d -> p*d - 1.
  *  Kelly fraction of bankroll: (p*d - 1) / (d - 1), capped/half-Kelly for sanity. */
@@ -43,8 +59,10 @@ export default function EvClient({ data }: { data: CompareData }) {
       if (market !== "all" && r.market !== market) continue;
       out.push({ ...r, _ev: e.ev, _kelly: e.kelly });
     }
-    return out.sort((a, b) => b._ev - a._ev);
+    return out;
   }, [data.rows, market, minEv]);
+
+  const { sorted, sortKey, dir, onSort } = useSort<EvRow>(rows, evVal, { key: "ev", dir: "desc" });
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -77,20 +95,22 @@ export default function EvClient({ data }: { data: CompareData }) {
         <table className="stat">
           <thead>
             <tr>
-              <th style={{ textAlign: "left" }}>Player</th>
-              <th>Market</th>
-              <th>Line</th>
-              <th title="Model win probability">Model</th>
-              <th title="Model fair odds">Fair</th>
-              <th>Best price</th>
-              <th>Book</th>
-              <th>EV</th>
-              <th title="Suggested stake (fraction of bankroll)">Kelly</th>
-              <th title="Kelly fraction × your bankroll">Stake</th>
+              {(() => { const sp = { sortKey, dir, onSort }; return (<>
+                <Th k="player" {...sp} style={{ textAlign: "left" }}>Player</Th>
+                <Th k="market" {...sp}>Market</Th>
+                <Th k="line" {...sp}>Line</Th>
+                <Th k="model" {...sp} title="Model win probability">Model</Th>
+                <Th k="fair" {...sp} title="Model fair odds">Fair</Th>
+                <Th k="best" {...sp}>Best price</Th>
+                <Th k="book" {...sp}>Book</Th>
+                <Th k="ev" {...sp}>EV</Th>
+                <Th k="kelly" {...sp} title="Suggested stake (fraction of bankroll)">Kelly</Th>
+                <Th k="stake" {...sp} title="Kelly fraction × your bankroll">Stake</Th>
+              </>); })()}
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => {
+            {sorted.map((r, i) => {
               const frac = half ? r._kelly / 2 : r._kelly;
               const k = frac * 100;
               const stake = bank > 0 ? bank * frac : null;
@@ -114,7 +134,7 @@ export default function EvClient({ data }: { data: CompareData }) {
             })}
           </tbody>
         </table>
-        {!rows.length && <p style={{ color: "var(--muted)", padding: ".5rem" }}>No value bets clear the filters right now.</p>}
+        {!sorted.length && <p style={{ color: "var(--muted)", padding: ".5rem" }}>No value bets clear the filters right now.</p>}
       </div>
 
       <p style={{ color: "var(--muted)", fontSize: ".8rem", margin: 0 }}>

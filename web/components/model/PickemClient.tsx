@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import type { PickemData, PickemRow } from "@/lib/model";
 import { fair, MULTIPLIERS, pOver } from "@/lib/pickem-calc";
+import { Th, sortBy, type Dir } from "@/components/model/sortable";
 
 interface Leg { key: string; pl: string; st: string; ln: number; sd: "over" | "under"; p: number }
 const rowKey = (r: PickemRow, i: number) => `${i}:${r.player}:${r.stat}`;
@@ -12,6 +13,11 @@ export default function PickemClient({ data }: { data: PickemData }) {
   const [strong, setStrong] = useState(false);
   const [lines, setLines] = useState<Record<string, string>>({});
   const [slip, setSlip] = useState<Leg[]>([]);
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [dir, setDir] = useState<Dir>("desc");
+  const onSort = (k: string) =>
+    sortKey === k ? setDir((d) => (d === "asc" ? "desc" : "asc")) : (setSortKey(k), setDir("desc"));
+  const sp = { sortKey, dir, onSort };
 
   const rows = useMemo(() => data.rows.map((r, i) => ({ r, i, key: rowKey(r, i) })), [data.rows]);
 
@@ -20,7 +26,7 @@ export default function PickemClient({ data }: { data: PickemData }) {
     return v !== undefined ? parseFloat(v) : r.line;
   };
 
-  const shown = rows.filter(({ r, key }) => {
+  const filtered = rows.filter(({ r, key }) => {
     if (match !== "all" && r.event !== match) return false;
     if (stat !== "all" && r.stat_label !== stat) return false;
     if (strong) {
@@ -29,6 +35,19 @@ export default function PickemClient({ data }: { data: PickemData }) {
     }
     return true;
   });
+  type Item = { r: PickemRow; i: number; key: string };
+  const pkVal = (it: Item, k: string): string | number | null => {
+    switch (k) {
+      case "player": return it.r.player;
+      case "stat": return it.r.stat_label;
+      case "proj": return it.r.proj;
+      case "line": return lineOf(it.key, it.r);
+      case "over": return pOver(it.r.dist, lineOf(it.key, it.r)) ?? null;
+      case "under": { const po = pOver(it.r.dist, lineOf(it.key, it.r)); return po == null ? null : 1 - po; }
+      default: return it.r.dab_line;
+    }
+  };
+  const shown = sortBy(filtered, pkVal, sortKey, dir);
 
   const addLeg = (r: PickemRow, key: string, sd: "over" | "under") => {
     const po = pOver(r.dist, lineOf(key, r));
@@ -103,13 +122,13 @@ export default function PickemClient({ data }: { data: PickemData }) {
         <table className="stat">
           <thead>
             <tr>
-              <th style={{ textAlign: "left" }}>Player</th>
-              <th>Stat</th>
-              <th>Proj</th>
-              <th>Your line</th>
-              <th>Dabble</th>
-              <th>Over — P · price</th>
-              <th>Under — P · price</th>
+              <Th k="player" {...sp} style={{ textAlign: "left" }}>Player</Th>
+              <Th k="stat" {...sp}>Stat</Th>
+              <Th k="proj" {...sp}>Proj</Th>
+              <Th k="line" {...sp}>Your line</Th>
+              <Th k="dab" {...sp}>Dabble</Th>
+              <Th k="over" {...sp}>Over — P · price</Th>
+              <Th k="under" {...sp}>Under — P · price</Th>
             </tr>
           </thead>
           <tbody>

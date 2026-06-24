@@ -1,8 +1,20 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { BOOKS, type CompareData, type CompareRow } from "@/lib/model";
+import { Th, useSort } from "@/components/model/sortable";
 
 const BOOK_KEYS = Object.keys(BOOKS);
+
+const cmpVal = (r: CompareRow, k: string): string | number | null => {
+  if (k.startsWith("book:")) return r.books?.[k.slice(5)] ?? null;
+  switch (k) {
+    case "player": return r.player;
+    case "market": return r.market;
+    case "line": return r.line;
+    case "myfair": return r.my_fair;
+    default: return r.ev; // ev
+  }
+};
 
 export default function CompareClient({ data }: { data: CompareData }) {
   const [match, setMatch] = useState("all");
@@ -40,6 +52,8 @@ export default function CompareClient({ data }: { data: CompareData }) {
     });
   }, [data.rows, match, market, evOnly, hideLong]);
 
+  const { sorted, sortKey, dir, onSort } = useSort<CompareRow>(rows, cmpVal);
+  const sp = { sortKey, dir, onSort };
   const rk = (r: CompareRow) => `${r.match}|${r.market}|${r.player}|${r.line}`;
 
   return (
@@ -62,18 +76,18 @@ export default function CompareClient({ data }: { data: CompareData }) {
         <table className="stat">
           <thead>
             <tr>
-              <th style={{ textAlign: "left" }}>Player</th>
-              <th>Market</th>
-              <th>Line</th>
-              <th>My price</th>
-              {BOOK_KEYS.map((b) => <th key={b}>{BOOKS[b]}</th>)}
-              <th>Best EV</th>
+              <Th k="player" {...sp} style={{ textAlign: "left" }}>Player</Th>
+              <Th k="market" {...sp}>Market</Th>
+              <Th k="line" {...sp}>Line</Th>
+              <Th k="myfair" {...sp}>My price</Th>
+              {BOOK_KEYS.map((b) => <Th key={b} k={`book:${b}`} {...sp}>{BOOKS[b]}</Th>)}
+              <Th k="ev" {...sp}>Best EV</Th>
               <th title="Type a price you see elsewhere (e.g. Dabble) to value it">Your price</th>
               <th>Your EV</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {sorted.map((r) => {
               const key = rk(r);
               const yourP = parseFloat(manual[key] ?? "");
               const yourEv = r.my_p && yourP > 0 ? r.my_p * yourP - 1 : null;
