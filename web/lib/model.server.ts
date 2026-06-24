@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type {
   BacktestData,
   CompareData,
+  LineupMatch,
   ModelMeta,
   PickemData,
   PredMatch,
@@ -39,6 +40,8 @@ export const loadPickem = () =>
   });
 export const loadScoring = () =>
   read<ScoringData>("scoring.json", { points: [], tries: [] });
+export const loadLineups = () =>
+  read<{ matches: LineupMatch[] }>("lineups.json", { matches: [] });
 export const loadBacktest = () =>
   read<BacktestData>("backtest.json", {
     holdouts: [],

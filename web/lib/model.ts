@@ -123,6 +123,24 @@ export interface BacktestData {
   generated: string | null;
 }
 
+export interface LineupPlayer {
+  playerId: number | null;
+  name: string;
+  position: string | null;
+  jumper: number | null;
+  kicker: boolean;
+}
+export interface LineupSide {
+  team: string | null;
+  players: LineupPlayer[];
+}
+export interface LineupMatch {
+  matchId: string;
+  event: string;
+  home: LineupSide;
+  away: LineupSide;
+}
+
 export interface ValuePick {
   player: string;
   team: string;
