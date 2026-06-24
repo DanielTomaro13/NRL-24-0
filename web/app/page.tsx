@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HomeStats from "@/components/HomeStats";
+import HomeModel from "@/components/HomeModel";
 import AdUnit from "@/components/AdUnit";
 import { AD_SLOTS } from "@/lib/ads";
 import { GAMES } from "@/lib/gamelist";
@@ -29,11 +30,14 @@ export default function Home() {
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href="/play?quick=1" className="btn btn-primary">⚡ Quick Nine — spin now</Link>
-          <Link href="/play" className="btn">All modes</Link>
+          <Link href="/model" className="btn">📊 The Model</Link>
           <Link href="/games" className="btn">Mini-games</Link>
           <Link href="/ladder" className="btn">Ladder</Link>
         </div>
       </section>
+
+      {/* featured: the statistical model — a point of focus near the top */}
+      <HomeModel />
 
       {/* games grid */}
       <section>
