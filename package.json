@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "data": "npm run build -w pipeline",
+    "fetch:model": "node pipeline/fetch-model.mjs",
     "dev": "npm run dev -w web",
     "build": "npm run build -w web",
     "start": "npm run start -w web"

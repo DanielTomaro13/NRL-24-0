@@ -1,12 +1,16 @@
 import Link from "next/link";
 import HomeStats from "@/components/HomeStats";
+import HomeModel from "@/components/HomeModel";
+import HeroValueTicker from "@/components/model/HeroValueTicker";
 import AdUnit from "@/components/AdUnit";
 import { AD_SLOTS } from "@/lib/ads";
 import { GAMES } from "@/lib/gamelist";
 import { serverResults } from "@/lib/serverdata";
 import { allPlayers } from "@/lib/playerdb";
+import { loadTopValue } from "@/lib/model.server";
 
-export default function Home() {
+export default async function Home() {
+  const topPicks = await loadTopValue(6);
   const r = serverResults("nrl");
   const season = r.seasons[0];
   const initial = {
@@ -29,11 +33,15 @@ export default function Home() {
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href="/play?quick=1" className="btn btn-primary">⚡ Quick Nine — spin now</Link>
-          <Link href="/play" className="btn">All modes</Link>
+          <Link href="/model" className="btn">📊 The Model</Link>
           <Link href="/games" className="btn">Mini-games</Link>
           <Link href="/ladder" className="btn">Ladder</Link>
         </div>
+        {topPicks.length ? <HeroValueTicker picks={topPicks} /> : null}
       </section>
+
+      {/* featured: the statistical model — a point of focus near the top */}
+      <HomeModel />
 
       {/* games grid */}
       <section>

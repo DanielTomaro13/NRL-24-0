@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Fired by the NRL-Modelling repo after it refreshes odds/predictions, so the
+  # /model pages redeploy with fresh data without a manual push.
+  repository_dispatch:
+    types: [model-data-updated]
 
 permissions:
   contents: read
@@ -24,6 +28,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Refresh the betting-model bundle from the NRL-Modelling repo (the data
+      # engine) so /model pages ship the latest predictions/odds each deploy.
+      - name: Fetch model data
+        run: npm run fetch:model
+        continue-on-error: true
       # Data JSON is committed under web/public/data, so the build is pure-static.
       - name: Build static export
         run: npm run build
