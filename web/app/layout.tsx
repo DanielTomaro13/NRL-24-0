@@ -6,9 +6,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import JsonLd from "@/components/JsonLd";
 import AdUnit from "@/components/AdUnit";
-import ModelBanner from "@/components/model/ModelBanner";
 import { AD_CLIENT, AD_SLOTS } from "@/lib/ads";
-import { loadTopValue } from "@/lib/model.server";
 import { SITE } from "@/lib/seo";
 
 export const viewport: Viewport = {
@@ -95,12 +93,10 @@ const appLd = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const topPick = (await loadTopValue(1))[0] ?? null;
   return (
     <html lang="en-AU">
       <body>
         <SisterSites active="nrl" />
-        <ModelBanner pick={topPick} />
         <SiteHeader />
         <main className="container-x" style={{ paddingTop: "1.5rem", minHeight: "60vh" }}>
           {children}
