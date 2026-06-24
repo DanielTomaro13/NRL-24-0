@@ -247,4 +247,16 @@ table.stat tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
   .model-filters { gap: 8px !important; }
   /* 16px keeps iOS from auto-zooming when a field gets focus */
   .model-filters select, .model-filters input, .mtable input { font-size: 16px !important; }
+  /* the frozen player column was eating the screen — drop the secondary team label
+     and cap its width so the data columns get room */
+  .mtable table.stat td:first-child .tm,
+  .mtable table.stat td:first-child > span { display: none; }
+  .mtable table.stat td:first-child,
+  .mtable table.stat th:first-child {
+    max-width: 92px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 0.35rem;
+  }
 }
