@@ -11,6 +11,7 @@ export const metadata = pageMeta({
 });
 
 const CARDS = [
+  { href: "/model/lineups", title: "Lineups", blurb: "Confirmed team lists for every game this round, with each side's goal kicker flagged." },
   { href: "/model/predictions", title: "Predictions", blurb: "Per-player projected tries, points and kicker points for every game this round." },
   { href: "/model/compare", title: "Compare odds", blurb: "Model fair price next to live Sportsbet, Ladbrokes, TAB, PointsBet & Dabble prices — best highlighted." },
   { href: "/model/pickem", title: "Pick'em", blurb: "Type any Dabble line and the model returns P(over), fair odds and a lean — build a parlay slip." },
