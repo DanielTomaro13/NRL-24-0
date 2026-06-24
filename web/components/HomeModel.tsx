@@ -1,17 +1,36 @@
 import Link from "next/link";
 import { BOOKS } from "@/lib/model";
-import { loadCompare, loadModelMeta, loadPickem } from "@/lib/model.server";
+import {
+  loadBacktest,
+  loadCompare,
+  loadModelMeta,
+  loadPickem,
+  loadPredictions,
+} from "@/lib/model.server";
 
-/** Featured homepage panel for the statistical model — a point of focus, with a few
- * live numbers (round, market count, top value picks) pulled from the model bundle. */
+/** Featured homepage panel for the statistical model — a point of focus, with live
+ * numbers: top value picks, most-likely try scorers, this round's games, accuracy. */
 export default async function HomeModel() {
-  const [meta, cmp, pk] = await Promise.all([loadModelMeta(), loadCompare(), loadPickem()]);
+  const [meta, cmp, pk, preds, bt] = await Promise.all([
+    loadModelMeta(),
+    loadCompare(),
+    loadPickem(),
+    loadPredictions(),
+    loadBacktest(),
+  ]);
 
   // top value markets: real edges only (filter out longshot/mismatch noise)
   const picks = cmp.rows
     .filter((r) => r.ev != null && r.ev > 0 && r.ev <= 25 && r.best != null)
     .sort((a, b) => (b.ev ?? 0) - (a.ev ?? 0))
-    .slice(0, 3);
+    .slice(0, 4);
+
+  // most likely try scorers this round (across all games)
+  const tryScorers = preds.matches
+    .flatMap((m) => m.players)
+    .filter((p) => p.p_anytime != null)
+    .sort((a, b) => (b.p_anytime ?? 0) - (a.p_anytime ?? 0))
+    .slice(0, 4);
 
   const stats = [
     meta.round ? `Round ${meta.round}` : "NRL",
@@ -52,32 +71,66 @@ export default async function HomeModel() {
           Sportsbet, Ladbrokes, TAB, PointsBet and Dabble odds to surface <b style={{ color: "var(--text)" }}>value the market is missing</b>.
         </p>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {stats.map((s) => (
             <span key={s} className="chip" style={{ color: "var(--gold)" }}>{s}</span>
           ))}
+          {bt.tries?.auc ? (
+            <Link href="/model/accuracy" style={{ color: "var(--muted)", fontSize: ".8rem", textDecoration: "none" }}>
+              · backtested: <b style={{ color: "var(--accent-2)" }}>{bt.tries.auc.toFixed(2)} AUC</b>
+              {bt.n_test ? ` over ${bt.n_test.toLocaleString()} player-games` : ""} →
+            </Link>
+          ) : null}
         </div>
 
-        {picks.length ? (
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>
-              Top value right now
-            </div>
-            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))" }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>
+          {picks.length ? (
+            <div style={{ display: "grid", gap: 6, alignContent: "start" }}>
+              <div style={{ fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>
+                Top value right now
+              </div>
               {picks.map((p, i) => (
-                <Link
-                  key={i}
-                  href="/model/compare"
-                  className="card"
-                  style={{ padding: ".7rem .9rem", display: "grid", gap: 2 }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                    <b style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.player}</b>
-                    <span style={{ color: "var(--accent-2)", fontWeight: 800, fontSize: ".95rem" }}>+{p.ev!.toFixed(0)}%</span>
-                  </div>
-                  <div style={{ color: "var(--muted)", fontSize: ".78rem" }}>
-                    {p.market}{p.line != null ? ` ${p.line}` : ""} · {p.best} @ {p.best_book ? BOOKS[p.best_book] ?? p.best_book : "–"}
-                  </div>
+                <Link key={i} href="/model/compare" className="card" style={{ padding: ".55rem .8rem", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <b>{p.player}</b>{" "}
+                    <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{p.market}{p.line != null ? ` ${p.line}` : ""}</span>
+                  </span>
+                  <span style={{ whiteSpace: "nowrap" }}>
+                    <span style={{ color: "var(--accent-2)", fontWeight: 800 }}>+{p.ev!.toFixed(0)}%</span>{" "}
+                    <span style={{ color: "var(--muted)", fontSize: ".78rem" }}>{p.best}@{p.best_book ? BOOKS[p.best_book] ?? p.best_book : "–"}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+
+          {tryScorers.length ? (
+            <div style={{ display: "grid", gap: 6, alignContent: "start" }}>
+              <div style={{ fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>
+                Most likely try scorers
+              </div>
+              {tryScorers.map((p, i) => (
+                <Link key={i} href="/model/predictions" className="card" style={{ padding: ".55rem .8rem", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <b>{p.name}</b>{" "}
+                    <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{p.team}</span>
+                  </span>
+                  <span style={{ color: "var(--accent-2)", fontWeight: 800, whiteSpace: "nowrap" }}>{((p.p_anytime ?? 0) * 100).toFixed(0)}%</span>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {preds.matches.length ? (
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>
+              This round
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {preds.matches.map((m) => (
+                <Link key={m.matchId} href="/model/lineups" className="chip" style={{ color: "var(--muted)", textDecoration: "none" }}>
+                  {m.event}
                 </Link>
               ))}
             </div>
@@ -86,8 +139,8 @@ export default async function HomeModel() {
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href="/model" className="btn btn-primary">Explore the model</Link>
+          <Link href="/model/lineups" className="btn">Team lists</Link>
           <Link href="/model/pickem" className="btn">Pick&apos;em calculator</Link>
-          <Link href="/model/compare" className="btn">Compare odds</Link>
         </div>
         <span style={{ color: "var(--muted)", fontSize: ".72rem" }}>Educational only — not betting advice. 18+. Gamble responsibly.</span>
       </div>
