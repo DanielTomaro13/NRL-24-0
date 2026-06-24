@@ -23,7 +23,7 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="model-filters" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <select value={match} onChange={(e) => setMatch(e.target.value)} style={sel}>
           <option value="all">All matches</option>
           {matches.map((m) => (
@@ -34,7 +34,7 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
       </div>
 
       {shown.map((m) => (
-        <div key={m.matchId} className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
+        <div key={m.matchId} className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
           <div style={{ padding: ".4rem .3rem", fontWeight: 800, fontFamily: "var(--font-cond)", letterSpacing: ".02em" }}>
             {m.event}
           </div>

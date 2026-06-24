@@ -40,6 +40,7 @@ export default async function HomeModel() {
 
   return (
     <section
+      className="model-feature"
       style={{
         position: "relative",
         borderRadius: 16,

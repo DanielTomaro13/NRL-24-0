@@ -64,7 +64,7 @@ export default async function AccuracyPage() {
       ) : null}
 
       {bt.regression.length ? (
-        <div className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
+        <div className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
           <div style={{ padding: ".5rem .3rem", fontWeight: 800, fontFamily: "var(--font-cond)", textTransform: "uppercase" }}>
             Per-stat error (mean absolute error)
           </div>

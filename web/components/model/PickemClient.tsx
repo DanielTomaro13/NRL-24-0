@@ -57,7 +57,7 @@ export default function PickemClient({ data }: { data: PickemData }) {
         parlay is +EV when <code>multiplier × (product of win probabilities) &gt; 1</code>.
       </p>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="model-filters" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <select value={match} onChange={(e) => setMatch(e.target.value)} style={sel}>
           <option value="all">All matches</option>
           {data.matches.map((m) => <option key={m}>{m}</option>)}
@@ -99,7 +99,7 @@ export default function PickemClient({ data }: { data: PickemData }) {
         </div>
       )}
 
-      <div className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
+      <div className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
         <table className="stat">
           <thead>
             <tr>

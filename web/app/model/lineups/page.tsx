@@ -67,7 +67,7 @@ export default async function LineupsPage() {
           <div style={{ fontFamily: "var(--font-cond)", fontWeight: 800, letterSpacing: ".02em", marginBottom: 10, color: "var(--muted)" }}>
             {m.event}
           </div>
-          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+          <div className="lineup-cols">
             <TeamCol side={m.home} />
             <TeamCol side={m.away} />
           </div>

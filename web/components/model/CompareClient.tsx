@@ -44,7 +44,7 @@ export default function CompareClient({ data }: { data: CompareData }) {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="model-filters" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <select value={match} onChange={(e) => setMatch(e.target.value)} style={sel}>
           <option value="all">All matches</option>
           {data.matches.map((m) => <option key={m}>{m}</option>)}
@@ -58,7 +58,7 @@ export default function CompareClient({ data }: { data: CompareData }) {
         <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{rows.length} markets</span>
       </div>
 
-      <div className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
+      <div className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
         <table className="stat">
           <thead>
             <tr>
