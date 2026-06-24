@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Fired by the NRL-Modelling repo after it refreshes odds/predictions, so the
+  # /model pages redeploy with fresh data without a manual push.
+  repository_dispatch:
+    types: [model-data-updated]
 
 permissions:
   contents: read

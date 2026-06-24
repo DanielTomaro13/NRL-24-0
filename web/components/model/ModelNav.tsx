@@ -8,6 +8,7 @@ const TABS = [
   { href: "/model/compare", label: "Compare odds" },
   { href: "/model/pickem", label: "Pick'em" },
   { href: "/model/scoring", label: "Scoring" },
+  { href: "/model/accuracy", label: "Accuracy" },
 ];
 
 export default function ModelNav() {

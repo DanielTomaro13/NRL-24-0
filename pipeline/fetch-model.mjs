@@ -10,7 +10,7 @@ import { dirname } from "node:path";
 const BASE =
   process.env.MODEL_DATA_BASE ??
   "https://raw.githubusercontent.com/DanielTomaro13/NRL-Modelling/main/reports/site";
-const FILES = ["meta.json", "predictions.json", "compare.json", "pickem.json", "scoring.json"];
+const FILES = ["meta.json", "predictions.json", "compare.json", "pickem.json", "scoring.json", "backtest.json"];
 const OUT = new URL("../web/public/data/model/", import.meta.url);
 
 await mkdir(OUT, { recursive: true });

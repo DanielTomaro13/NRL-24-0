@@ -3,6 +3,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
+  BacktestData,
   CompareData,
   ModelMeta,
   PickemData,
@@ -38,6 +39,14 @@ export const loadPickem = () =>
   });
 export const loadScoring = () =>
   read<ScoringData>("scoring.json", { points: [], tries: [] });
+export const loadBacktest = () =>
+  read<BacktestData>("backtest.json", {
+    holdouts: [],
+    n_test: null,
+    tries: null,
+    regression: [],
+    generated: null,
+  });
 
 /** Top model value markets — real edges only (filters longshot/mismatch noise). */
 export async function loadTopValue(n = 6): Promise<ValuePick[]> {

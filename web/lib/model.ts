@@ -97,6 +97,32 @@ export interface ScoringData {
   tries: ScoringTry[];
 }
 
+export interface BacktestTries {
+  n_test: number | null;
+  base_rate: number | null;
+  auc: number | null;
+  brier: number | null;
+  logloss: number | null;
+  auc_baseline: number | null;
+  calibration_error: number | null;
+  reliability: { pred: number[]; emp: number[] };
+}
+export interface BacktestStat {
+  target: string;
+  label: string;
+  mae_model: number | null;
+  mae_base: number | null;
+  gain_pct: number | null;
+  n: number | null;
+}
+export interface BacktestData {
+  holdouts: number[];
+  n_test: number | null;
+  tries: BacktestTries | null;
+  regression: BacktestStat[];
+  generated: string | null;
+}
+
 export interface ValuePick {
   player: string;
   team: string;

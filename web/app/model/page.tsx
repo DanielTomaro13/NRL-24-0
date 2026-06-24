@@ -15,6 +15,7 @@ const CARDS = [
   { href: "/model/compare", title: "Compare odds", blurb: "Model fair price next to live Sportsbet, Ladbrokes, TAB, PointsBet & Dabble prices — best highlighted." },
   { href: "/model/pickem", title: "Pick'em", blurb: "Type any Dabble line and the model returns P(over), fair odds and a lean — build a parlay slip." },
   { href: "/model/scoring", title: "Scoring", blurb: "Player-points and try-scorer leaders with the model's price versus the best book." },
+  { href: "/model/accuracy", title: "Accuracy", blurb: "Out-of-sample backtest: try-scorer AUC, calibration curve and per-stat error vs a form baseline." },
 ];
 
 export default async function ModelOverview() {
