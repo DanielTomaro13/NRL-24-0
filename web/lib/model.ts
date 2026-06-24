@@ -19,6 +19,7 @@ export interface PredPlayer {
   exp_tries: number | null;
   exp_points: number | null;
   exp_kicker: number | null;
+  exp_perf: number | null;
 }
 export interface PredMatch {
   matchId: string;

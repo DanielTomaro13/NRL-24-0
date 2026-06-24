@@ -13,6 +13,7 @@ const predVal = (p: PredPlayer, k: string): string | number | null => {
     case "tryp": return p.p_anytime;
     case "xtries": return p.exp_tries;
     case "xkick": return p.exp_kicker;
+    case "xperf": return p.exp_perf;
     default: return p.exp_points;
   }
 };
@@ -63,6 +64,7 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
                 <Th k="tryp" {...sp} title="Anytime try probability">Try %</Th>
                 <Th k="xtries" {...sp} title="Expected tries">xTries</Th>
                 <Th k="xpoints" {...sp} title="Expected player points">xPoints</Th>
+                <Th k="xperf" {...sp} title="Expected performance (fantasy) points">xPerf</Th>
                 <Th k="xkick" {...sp} title="Expected kicker points">xKick</Th>
               </tr>
             </thead>
@@ -77,6 +79,7 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
                   <td style={{ color: (p.p_anytime ?? 0) >= 0.4 ? "var(--accent-2)" : "var(--text)" }}>{pct(p.p_anytime)}</td>
                   <td>{num(p.exp_tries, 2)}</td>
                   <td style={{ fontWeight: 700 }}>{num(p.exp_points, 1)}</td>
+                  <td>{num(p.exp_perf, 1)}</td>
                   <td style={{ color: "var(--muted)" }}>{num(p.exp_kicker, 1)}</td>
                 </tr>
               ))}
