@@ -29,7 +29,7 @@ export default function ScoringClient({ data }: { data: ScoringData }) {
       </div>
 
       {tab === "points" ? (
-        <div className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
+        <div className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
           <table className="stat">
             <thead>
               <tr>
@@ -64,7 +64,7 @@ export default function ScoringClient({ data }: { data: ScoringData }) {
           {!data.points.length && <p style={{ color: "var(--muted)", padding: ".5rem" }}>No priced player-points markets yet.</p>}
         </div>
       ) : (
-        <div className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
+        <div className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
           <table className="stat">
             <thead>
               <tr>

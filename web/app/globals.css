@@ -229,3 +229,22 @@ table.stat tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
+
+/* ---- /model section: layout helpers + mobile ---- */
+.lineup-cols { display: flex; gap: 24px; flex-wrap: wrap; }
+/* freeze the player/first column while wide model tables scroll sideways on mobile */
+.mtable table.stat td:first-child,
+.mtable table.stat th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+@media (max-width: 560px) {
+  table.stat th, table.stat td { padding: 0.42rem 0.5rem; font-size: 0.8rem; }
+  .lineup-cols { flex-direction: column; gap: 14px; }
+  .model-feature { padding: 1.05rem !important; }
+  .model-filters { gap: 8px !important; }
+  /* 16px keeps iOS from auto-zooming when a field gets focus */
+  .model-filters select, .model-filters input, .mtable input { font-size: 16px !important; }
+}
