@@ -1,13 +1,30 @@
 "use client";
 import { useMemo, useState } from "react";
-import type { PredMatch } from "@/lib/model";
+import type { PredMatch, PredPlayer } from "@/lib/model";
+import { Th, sortBy, type Dir } from "@/components/model/sortable";
 
 const pct = (x: number | null) => (x == null ? "–" : `${(x * 100).toFixed(0)}%`);
 const num = (x: number | null, d = 1) => (x == null ? "–" : x.toFixed(d));
 
+const predVal = (p: PredPlayer, k: string): string | number | null => {
+  switch (k) {
+    case "player": return p.name;
+    case "pos": return p.pos;
+    case "tryp": return p.p_anytime;
+    case "xtries": return p.exp_tries;
+    case "xkick": return p.exp_kicker;
+    default: return p.exp_points;
+  }
+};
+
 export default function PredictionsClient({ matches }: { matches: PredMatch[] }) {
   const [match, setMatch] = useState("all");
   const [q, setQ] = useState("");
+  const [sortKey, setSortKey] = useState<string | null>("xpoints");
+  const [dir, setDir] = useState<Dir>("desc");
+  const onSort = (k: string) =>
+    sortKey === k ? setDir((d) => (d === "asc" ? "desc" : "asc")) : (setSortKey(k), setDir("desc"));
+  const sp = { sortKey, dir, onSort };
   const shown = useMemo(() => {
     return matches
       .filter((m) => match === "all" || m.event === match)
@@ -41,16 +58,16 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
           <table className="stat">
             <thead>
               <tr>
-                <th style={{ textAlign: "left" }}>Player</th>
-                <th>Pos</th>
-                <th title="Anytime try probability">Try %</th>
-                <th title="Expected tries">xTries</th>
-                <th title="Expected player points">xPoints</th>
-                <th title="Expected kicker points">xKick</th>
+                <Th k="player" {...sp} style={{ textAlign: "left" }}>Player</Th>
+                <Th k="pos" {...sp}>Pos</Th>
+                <Th k="tryp" {...sp} title="Anytime try probability">Try %</Th>
+                <Th k="xtries" {...sp} title="Expected tries">xTries</Th>
+                <Th k="xpoints" {...sp} title="Expected player points">xPoints</Th>
+                <Th k="xkick" {...sp} title="Expected kicker points">xKick</Th>
               </tr>
             </thead>
             <tbody>
-              {m.players.map((p, i) => (
+              {sortBy(m.players, predVal, sortKey, dir).map((p, i) => (
                 <tr key={`${p.playerId}-${i}`}>
                   <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
                     <b>{p.name}</b>
