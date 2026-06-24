@@ -1,0 +1,113 @@
+"use client";
+import { useMemo, useState } from "react";
+import { BOOKS, type CompareData, type CompareRow } from "@/lib/model";
+
+/** Expected value of backing the best price: model prob p at decimal price d -> p*d - 1.
+ *  Kelly fraction of bankroll: (p*d - 1) / (d - 1), capped/half-Kelly for sanity. */
+function evAndKelly(p: number | null, price: number | null) {
+  if (p == null || price == null || price <= 1) return null;
+  const ev = p * price - 1;
+  const kelly = ev / (price - 1);
+  return { ev, kelly };
+}
+
+export default function EvClient({ data }: { data: CompareData }) {
+  const [market, setMarket] = useState("all");
+  const [minEv, setMinEv] = useState(0);
+  const [half, setHalf] = useState(true);
+
+  const rows = useMemo(() => {
+    const out: Array<CompareRow & { _ev: number; _kelly: number }> = [];
+    for (const r of data.rows) {
+      const e = evAndKelly(r.my_p, r.best);
+      if (!e) continue;
+      const evPct = e.ev * 100;
+      // real edges only: positive, not implausible-longshot/mismatch territory
+      if (evPct <= 0 || evPct > 30) continue;
+      if (evPct < minEv) continue;
+      if (market !== "all" && r.market !== market) continue;
+      out.push({ ...r, _ev: e.ev, _kelly: e.kelly });
+    }
+    return out.sort((a, b) => b._ev - a._ev);
+  }, [data.rows, market, minEv]);
+
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <p style={{ color: "var(--muted)", margin: 0, maxWidth: "72ch", fontSize: ".95rem", lineHeight: 1.5 }}>
+        Every market where the model rates the <b style={{ color: "var(--text)" }}>best available price</b> as
+        value, ranked by expected value. <b>EV</b> = model win probability × price − 1. <b>Kelly</b> is the
+        fraction of bankroll that maximises long-run growth at that edge ({half ? "shown halved — safer" : "full"}).
+      </p>
+
+      <div className="model-filters" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <select value={market} onChange={(e) => setMarket(e.target.value)} style={sel}>
+          <option value="all">All markets</option>
+          {data.markets.map((m) => <option key={m}>{m}</option>)}
+        </select>
+        <label style={chk}>min EV
+          <select value={minEv} onChange={(e) => setMinEv(Number(e.target.value))} style={{ ...sel, marginLeft: 6 }}>
+            {[0, 2, 5, 10].map((v) => <option key={v} value={v}>{v}%</option>)}
+          </select>
+        </label>
+        <label style={chk}><input type="checkbox" checked={half} onChange={(e) => setHalf(e.target.checked)} /> half Kelly</label>
+        <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{rows.length} value bets</span>
+      </div>
+
+      <div className="card scroll-x mtable" style={{ padding: ".4rem .6rem" }}>
+        <table className="stat">
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left" }}>Player</th>
+              <th>Market</th>
+              <th>Line</th>
+              <th title="Model win probability">Model</th>
+              <th title="Model fair odds">Fair</th>
+              <th>Best price</th>
+              <th>Book</th>
+              <th>EV</th>
+              <th title="Suggested stake (fraction of bankroll)">Kelly</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const k = (half ? r._kelly / 2 : r._kelly) * 100;
+              return (
+                <tr key={`${r.match}-${r.player}-${r.market}-${r.line}-${i}`}>
+                  <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
+                    <b>{r.player}</b>
+                    <span style={{ color: "var(--muted)", marginLeft: 6, fontSize: ".78rem" }}>{r.team}</span>
+                  </td>
+                  <td style={{ color: "var(--muted)" }}>{r.market}</td>
+                  <td style={{ color: "var(--muted)" }}>{r.line ?? ""}</td>
+                  <td>{r.my_p != null ? `${(r.my_p * 100).toFixed(0)}%` : "–"}</td>
+                  <td style={{ color: "var(--muted)" }}>{r.my_fair ?? "–"}</td>
+                  <td style={{ color: "var(--accent-2)", fontWeight: 700 }}>{r.best}</td>
+                  <td style={{ color: "var(--muted)" }}>{r.best_book ? BOOKS[r.best_book] ?? r.best_book : "–"}</td>
+                  <td style={{ fontWeight: 800, color: "var(--accent-2)" }}>+{(r._ev * 100).toFixed(0)}%</td>
+                  <td style={{ color: "var(--gold)", fontWeight: 700 }}>{k.toFixed(1)}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!rows.length && <p style={{ color: "var(--muted)", padding: ".5rem" }}>No value bets clear the filters right now.</p>}
+      </div>
+
+      <p style={{ color: "var(--muted)", fontSize: ".8rem", margin: 0 }}>
+        Edges this large usually shrink as kickoff nears and the market sharpens. Very large EV can also
+        signal a team-list or name mismatch — sanity-check the lineup. Educational only, not betting
+        advice. 18+. Gamble responsibly.
+      </p>
+    </div>
+  );
+}
+
+const sel: React.CSSProperties = {
+  padding: ".4rem .6rem",
+  borderRadius: 8,
+  border: "1px solid var(--border)",
+  background: "var(--panel)",
+  color: "var(--text)",
+  fontSize: ".85rem",
+};
+const chk: React.CSSProperties = { display: "flex", gap: 5, alignItems: "center", fontSize: ".82rem", color: "var(--muted)" };
