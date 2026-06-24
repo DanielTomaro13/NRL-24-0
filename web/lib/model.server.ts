@@ -8,6 +8,7 @@ import type {
   PickemData,
   PredMatch,
   ScoringData,
+  ValuePick,
 } from "@/lib/model";
 
 const DIR = join(process.cwd(), "public", "data", "model");
@@ -37,3 +38,21 @@ export const loadPickem = () =>
   });
 export const loadScoring = () =>
   read<ScoringData>("scoring.json", { points: [], tries: [] });
+
+/** Top model value markets — real edges only (filters longshot/mismatch noise). */
+export async function loadTopValue(n = 6): Promise<ValuePick[]> {
+  const cmp = await loadCompare();
+  return cmp.rows
+    .filter((r) => r.ev != null && r.ev > 0 && r.ev <= 25 && r.best != null)
+    .sort((a, b) => (b.ev ?? 0) - (a.ev ?? 0))
+    .slice(0, n)
+    .map((r) => ({
+      player: r.player,
+      team: r.team,
+      market: r.market,
+      line: r.line,
+      ev: r.ev as number,
+      best: r.best,
+      book: r.best_book,
+    }));
+}

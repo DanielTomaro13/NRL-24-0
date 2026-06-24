@@ -97,6 +97,16 @@ export interface ScoringData {
   tries: ScoringTry[];
 }
 
+export interface ValuePick {
+  player: string;
+  team: string;
+  market: string;
+  line: number | null;
+  ev: number;
+  best: number | null;
+  book: string | null;
+}
+
 /** Book key -> short label, mirroring the model site. */
 export const BOOKS: Record<string, string> = {
   sportsbet: "SB",
