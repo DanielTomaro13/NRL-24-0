@@ -20,6 +20,15 @@ const CARDS = [
   { href: "/model/accuracy", title: "Accuracy", blurb: "Out-of-sample backtest: try-scorer AUC, calibration curve and per-stat error vs a form baseline." },
 ];
 
+const STEPS = [
+  { title: "Form features", body: "From Champion Data match stats + the confirmed team lists, we build each player’s recent-form features — <b>shifted one game</b> so a prediction never sees the game it’s predicting." },
+  { title: "The models", body: "Gradient-boosted trees predict a try-scorer’s expected tries (Poisson rate), a team’s goal-kicker output (anchored to the named kicker), and stat means for tackles, metres and performance points." },
+  { title: "Distributions", body: "A projection isn’t a bet — we turn it into a distribution: Poisson for tries, a <b>convolution</b> of 4×tries + 2×goals for points, and Normal(mean, σ) for the rest, with σ calibrated from out-of-sample error." },
+  { title: "Fair price", body: "Summing the distribution above/below a line gives the win probability for that market; <b>fair odds = 1 ÷ probability</b>, with no bookmaker margin." },
+  { title: "Find value", body: "Live odds from 5 books are de-vigged to their true probability. <b>EV = model prob × best price − 1</b>; a Kelly stake sizes the bet to the edge." },
+  { title: "Backtested", body: "Every figure is out-of-sample — trained on earlier seasons, scored on 2023–25: try-model <b>AUC ≈ 0.73</b>, calibrated, and 25–45% lower error than a recent-form baseline." },
+];
+
 export default async function ModelOverview() {
   const [preds, cmp, pk] = await Promise.all([loadPredictions(), loadCompare(), loadPickem()]);
   const stats = [
@@ -45,6 +54,29 @@ export default async function ModelOverview() {
           </Link>
         ))}
       </div>
+      <section style={{ display: "grid", gap: 12 }}>
+        <h2 style={{ margin: "8px 0 0", fontFamily: "var(--font-cond)", textTransform: "uppercase", fontSize: "1.5rem" }}>
+          How it works
+        </h2>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))" }}>
+          {STEPS.map((s, i) => (
+            <div key={i} className="card" style={{ padding: "1rem", display: "grid", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ display: "grid", placeItems: "center", width: 24, height: 24, borderRadius: 999, background: "var(--accent)", color: "#1a0a06", fontWeight: 800, fontSize: ".8rem", flexShrink: 0 }}>{i + 1}</span>
+                <b style={{ fontFamily: "var(--font-cond)", textTransform: "uppercase", letterSpacing: ".02em" }}>{s.title}</b>
+              </div>
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: ".86rem", lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: s.body }} />
+            </div>
+          ))}
+        </div>
+        <p style={{ color: "var(--muted)", fontSize: ".82rem", margin: 0 }}>
+          The short version: trees predict each player’s <b>rate or mean</b> → that becomes a <b>probability
+          distribution</b> → distributions price every market line → compared against de-vigged book odds to
+          surface <b style={{ color: "var(--accent-2)" }}>+EV</b>. See the{" "}
+          <a href="/model/accuracy" style={{ color: "var(--accent)" }}>backtest</a> for how it actually performs.
+        </p>
+      </section>
+
       <p style={{ color: "var(--muted)", fontSize: ".8rem", margin: 0 }}>
         The model runs in a separate pipeline and refreshes through the day. Figures are for
         information and entertainment only — not betting advice. Gamble responsibly.

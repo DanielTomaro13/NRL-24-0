@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BOOKS, type CompareData, type CompareRow } from "@/lib/model";
 
 /** Expected value of backing the best price: model prob p at decimal price d -> p*d - 1.
@@ -15,6 +15,21 @@ export default function EvClient({ data }: { data: CompareData }) {
   const [market, setMarket] = useState("all");
   const [minEv, setMinEv] = useState(0);
   const [half, setHalf] = useState(true);
+  const [bankroll, setBankroll] = useState("");
+
+  useEffect(() => {
+    try {
+      const b = localStorage.getItem("model-bankroll");
+      if (b) setBankroll(b);
+    } catch {}
+  }, []);
+  const setBank = (v: string) => {
+    setBankroll(v);
+    try {
+      v ? localStorage.setItem("model-bankroll", v) : localStorage.removeItem("model-bankroll");
+    } catch {}
+  };
+  const bank = parseFloat(bankroll) || 0;
 
   const rows = useMemo(() => {
     const out: Array<CompareRow & { _ev: number; _kelly: number }> = [];
@@ -37,6 +52,7 @@ export default function EvClient({ data }: { data: CompareData }) {
         Every market where the model rates the <b style={{ color: "var(--text)" }}>best available price</b> as
         value, ranked by expected value. <b>EV</b> = model win probability × price − 1. <b>Kelly</b> is the
         fraction of bankroll that maximises long-run growth at that edge ({half ? "shown halved — safer" : "full"}).
+        Set your <b>bankroll</b> and the <b>Stake</b> column shows the dollar amount.
       </p>
 
       <div className="model-filters" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -50,6 +66,10 @@ export default function EvClient({ data }: { data: CompareData }) {
           </select>
         </label>
         <label style={chk}><input type="checkbox" checked={half} onChange={(e) => setHalf(e.target.checked)} /> half Kelly</label>
+        <label style={chk}>bankroll $
+          <input inputMode="decimal" value={bankroll} onChange={(e) => setBank(e.target.value)} placeholder="0"
+            style={{ ...sel, width: 90, marginLeft: 6 }} />
+        </label>
         <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{rows.length} value bets</span>
       </div>
 
@@ -66,11 +86,14 @@ export default function EvClient({ data }: { data: CompareData }) {
               <th>Book</th>
               <th>EV</th>
               <th title="Suggested stake (fraction of bankroll)">Kelly</th>
+              <th title="Kelly fraction × your bankroll">Stake</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => {
-              const k = (half ? r._kelly / 2 : r._kelly) * 100;
+              const frac = half ? r._kelly / 2 : r._kelly;
+              const k = frac * 100;
+              const stake = bank > 0 ? bank * frac : null;
               return (
                 <tr key={`${r.match}-${r.player}-${r.market}-${r.line}-${i}`}>
                   <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
@@ -85,6 +108,7 @@ export default function EvClient({ data }: { data: CompareData }) {
                   <td style={{ color: "var(--muted)" }}>{r.best_book ? BOOKS[r.best_book] ?? r.best_book : "–"}</td>
                   <td style={{ fontWeight: 800, color: "var(--accent-2)" }}>+{(r._ev * 100).toFixed(0)}%</td>
                   <td style={{ color: "var(--gold)", fontWeight: 700 }}>{k.toFixed(1)}%</td>
+                  <td style={{ fontWeight: 800 }}>{stake != null ? `$${stake.toFixed(2)}` : "–"}</td>
                 </tr>
               );
             })}
