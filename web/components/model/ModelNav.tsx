@@ -7,6 +7,7 @@ const TABS = [
   { href: "/model/lineups", label: "Lineups" },
   { href: "/model/predictions", label: "Predictions" },
   { href: "/model/compare", label: "Compare odds" },
+  { href: "/model/ev", label: "Value bets" },
   { href: "/model/pickem", label: "Pick'em" },
   { href: "/model/scoring", label: "Scoring" },
   { href: "/model/accuracy", label: "Accuracy" },
