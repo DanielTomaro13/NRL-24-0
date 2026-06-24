@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BOOKS, type CompareData, type CompareRow } from "@/lib/model";
 import { Th, useSort } from "@/components/model/sortable";
+import { corroborated, isValue } from "@/lib/value";
 
 type EvRow = CompareRow & { _ev: number; _kelly: number };
 const evVal = (r: EvRow, k: string): string | number | null => {
@@ -48,14 +49,12 @@ export default function EvClient({ data }: { data: CompareData }) {
   const bank = parseFloat(bankroll) || 0;
 
   const rows = useMemo(() => {
-    const out: Array<CompareRow & { _ev: number; _kelly: number }> = [];
+    const out: Array<EvRow> = [];
     for (const r of data.rows) {
+      if (!isValue(r)) continue;                        // value gate (corroborated big edges)
       const e = evAndKelly(r.my_p, r.best);
       if (!e) continue;
-      const evPct = e.ev * 100;
-      // real edges only: positive, not implausible-longshot/mismatch territory
-      if (evPct <= 0 || evPct > 30) continue;
-      if (evPct < minEv) continue;
+      if (e.ev * 100 < minEv) continue;
       if (market !== "all" && r.market !== market) continue;
       out.push({ ...r, _ev: e.ev, _kelly: e.kelly });
     }
@@ -70,7 +69,9 @@ export default function EvClient({ data }: { data: CompareData }) {
         Every market where the model rates the <b style={{ color: "var(--text)" }}>best available price</b> as
         value, ranked by expected value. <b>EV</b> = model win probability × price − 1. <b>Kelly</b> is the
         fraction of bankroll that maximises long-run growth at that edge ({half ? "shown halved — safer" : "full"}).
-        Set your <b>bankroll</b> and the <b>Stake</b> column shows the dollar amount.
+        Set your <b>bankroll</b> and the <b>Stake</b> column shows the dollar amount. Modest edges show
+        as-is; bigger ones appear only when <b style={{ color: "var(--gold)" }}>✓field</b> — ≥2 other books
+        price it shorter, so the market agrees that book is out of line, not just the model.
       </p>
 
       <div className="model-filters" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -126,7 +127,12 @@ export default function EvClient({ data }: { data: CompareData }) {
                   <td style={{ color: "var(--muted)" }}>{r.my_fair ?? "–"}</td>
                   <td style={{ color: "var(--accent-2)", fontWeight: 700 }}>{r.best}</td>
                   <td style={{ color: "var(--muted)" }}>{r.best_book ? BOOKS[r.best_book] ?? r.best_book : "–"}</td>
-                  <td style={{ fontWeight: 800, color: "var(--accent-2)" }}>+{(r._ev * 100).toFixed(0)}%</td>
+                  <td style={{ fontWeight: 800, color: "var(--accent-2)", whiteSpace: "nowrap" }}>
+                    +{(r._ev * 100).toFixed(0)}%
+                    {r._ev * 100 > 25 && corroborated(r) ? (
+                      <span title="≥2 other books price this shorter — the value book is a genuine outlier" style={{ marginLeft: 4, color: "var(--gold)", fontSize: ".68rem", fontWeight: 700 }}>✓field</span>
+                    ) : null}
+                  </td>
                   <td style={{ color: "var(--gold)", fontWeight: 700 }}>{k.toFixed(1)}%</td>
                   <td style={{ fontWeight: 800 }}>{stake != null ? `$${stake.toFixed(2)}` : "–"}</td>
                 </tr>

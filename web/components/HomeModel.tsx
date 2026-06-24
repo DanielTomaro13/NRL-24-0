@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BOOKS } from "@/lib/model";
+import { isValue } from "@/lib/value";
 import {
   loadBacktest,
   loadCompare,
@@ -19,9 +20,10 @@ export default async function HomeModel() {
     loadBacktest(),
   ]);
 
-  // top value markets: real edges only (filter out longshot/mismatch noise)
+  // top value markets: modest edges, plus bigger ones only when ≥2 other books agree
+  // the value book is out of line (real value, not model-vs-market noise)
   const picks = cmp.rows
-    .filter((r) => r.ev != null && r.ev > 0 && r.ev <= 25 && r.best != null)
+    .filter(isValue)
     .sort((a, b) => (b.ev ?? 0) - (a.ev ?? 0))
     .slice(0, 4);
 
