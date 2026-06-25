@@ -47,11 +47,13 @@ export function availability(p: ScPlayer): { label: string; color: string } | nu
   return null;
 }
 
-/** Bookmaker-agnostic player key = first-initial + surname, accent/punct folded. */
+/** Player key = first-initial + surname, accent/punct folded. The model writes
+ *  names as "J.Isaako" (initial.surname, no space) while SuperCoach has full names
+ *  ("Jeremiah Isaako"), so the dot must split — both then key to "j_isaako". */
 export function playerKey(name: string): string {
   const s = (name || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/\([^)]*\)/g, " ").replace(/[^a-z\s'.-]/g, " ");
-  const toks = s.replace(/['.-]/g, "").split(/\s+/).filter(Boolean);
+    .replace(/\([^)]*\)/g, " ").replace(/\./g, " ").replace(/[^a-z\s'-]/g, " ");
+  const toks = s.replace(/['-]/g, "").split(/\s+/).filter(Boolean);
   if (!toks.length) return "";
   return toks.length === 1 ? toks[0] : `${toks[0][0]}_${toks[toks.length - 1]}`;
 }
