@@ -1,5 +1,6 @@
 import { pageMeta } from "@/lib/seo";
-import { loadPredictions } from "@/lib/model.server";
+import { loadPredictions, loadSuperCoach } from "@/lib/model.server";
+import { playerKey } from "@/lib/supercoach";
 import PredictionsClient from "@/components/model/PredictionsClient";
 
 export const metadata = pageMeta({
@@ -11,6 +12,8 @@ export const metadata = pageMeta({
 });
 
 export default async function PredictionsPage() {
-  const data = await loadPredictions();
-  return <PredictionsClient matches={data.matches} />;
+  const [data, sc] = await Promise.all([loadPredictions(), loadSuperCoach()]);
+  const scByKey: Record<string, number> = {};
+  for (const p of sc.players) { const k = playerKey(p.name); if (!(k in scByKey)) scByKey[k] = p.proj; }
+  return <PredictionsClient matches={data.matches} scByKey={scByKey} />;
 }

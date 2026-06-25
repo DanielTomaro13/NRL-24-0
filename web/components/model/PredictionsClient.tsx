@@ -2,23 +2,25 @@
 import { useMemo, useState } from "react";
 import type { PredMatch, PredPlayer } from "@/lib/model";
 import { Th, sortBy, type Dir } from "@/components/model/sortable";
+import { playerKey } from "@/lib/supercoach";
 
 const pct = (x: number | null) => (x == null ? "–" : `${(x * 100).toFixed(0)}%`);
 const num = (x: number | null, d = 1) => (x == null ? "–" : x.toFixed(d));
 
-const predVal = (p: PredPlayer, k: string): string | number | null => {
-  switch (k) {
-    case "player": return p.name;
-    case "pos": return p.pos;
-    case "tryp": return p.p_anytime;
-    case "xtries": return p.exp_tries;
-    case "xkick": return p.exp_kicker;
-    case "xperf": return p.exp_perf;
-    default: return p.exp_points;
-  }
-};
-
-export default function PredictionsClient({ matches }: { matches: PredMatch[] }) {
+export default function PredictionsClient({ matches, scByKey = {} }: { matches: PredMatch[]; scByKey?: Record<string, number> }) {
+  const sc = (p: PredPlayer) => scByKey[playerKey(p.name)] ?? null;
+  const predVal = (p: PredPlayer, k: string): string | number | null => {
+    switch (k) {
+      case "player": return p.name;
+      case "pos": return p.pos;
+      case "tryp": return p.p_anytime;
+      case "xtries": return p.exp_tries;
+      case "xkick": return p.exp_kicker;
+      case "xperf": return p.exp_perf;
+      case "sc": return sc(p);
+      default: return p.exp_points;
+    }
+  };
   const [match, setMatch] = useState("all");
   const [q, setQ] = useState("");
   const [sortKey, setSortKey] = useState<string | null>("xpoints");
@@ -66,6 +68,7 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
                 <Th k="xpoints" {...sp} title="Expected player points">xPoints</Th>
                 <Th k="xperf" {...sp} title="Expected performance (fantasy) points">xPerf</Th>
                 <Th k="xkick" {...sp} title="Expected kicker points">xKick</Th>
+                <Th k="sc" {...sp} title="SuperCoach projection">SC</Th>
               </tr>
             </thead>
             <tbody>
@@ -81,6 +84,7 @@ export default function PredictionsClient({ matches }: { matches: PredMatch[] })
                   <td style={{ fontWeight: 700 }}>{num(p.exp_points, 1)}</td>
                   <td>{num(p.exp_perf, 1)}</td>
                   <td style={{ color: "var(--muted)" }}>{num(p.exp_kicker, 1)}</td>
+                  <td style={{ fontWeight: 700, color: "var(--gold)" }}>{sc(p) == null ? "–" : Math.round(sc(p) as number)}</td>
                 </tr>
               ))}
             </tbody>

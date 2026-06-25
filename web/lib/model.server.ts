@@ -12,6 +12,7 @@ import type {
   ScoringData,
   ValuePick,
 } from "@/lib/model";
+import type { ScFeed } from "@/lib/supercoach";
 
 const DIR = join(process.cwd(), "public", "data", "model");
 
@@ -42,6 +43,8 @@ export const loadScoring = () =>
   read<ScoringData>("scoring.json", { points: [], tries: [] });
 export const loadLineups = () =>
   read<{ matches: LineupMatch[] }>("lineups.json", { matches: [] });
+export const loadSuperCoach = () =>
+  read<ScFeed>("supercoach.json", { generated: "", season: 0, round: 0, n_players: 0, players: [] });
 export const loadBacktest = () =>
   read<BacktestData>("backtest.json", {
     holdouts: [],

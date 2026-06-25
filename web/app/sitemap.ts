@@ -23,6 +23,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE.url}/fixtures/`, priority: 0.7, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/stats/`, priority: 0.7, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/leaderboard/`, priority: 0.6, changeFrequency: "daily", lastModified: now },
+    ...["", "players", "prices", "value", "form", "ownership", "injuries", "fixtures", "model", "how-it-works"].map((s) => ({
+      url: `${SITE.url}/supercoach${s ? "/" + s : ""}/`,
+      priority: s === "" ? 0.7 : s === "how-it-works" ? 0.5 : 0.6,
+      changeFrequency: (s === "how-it-works" ? "monthly" : "daily") as "monthly" | "daily",
+      lastModified: now,
+    })),
     { url: `${SITE.url}/about/`, priority: 0.5, changeFrequency: "monthly", lastModified: now },
     { url: `${SITE.url}/privacy/`, priority: 0.3, changeFrequency: "yearly", lastModified: now },
     { url: `${SITE.url}/contact/`, priority: 0.3, changeFrequency: "yearly", lastModified: now },
