@@ -34,6 +34,13 @@ export default async function HomeModel() {
     .sort((a, b) => (b.p_anytime ?? 0) - (a.p_anytime ?? 0))
     .slice(0, 4);
 
+  // highest projected point-scorers this round (try + goal-kicker points)
+  const pointScorers = preds.matches
+    .flatMap((m) => m.players)
+    .filter((p) => p.exp_points != null)
+    .sort((a, b) => (b.exp_points ?? 0) - (a.exp_points ?? 0))
+    .slice(0, 4);
+
   const stats = [
     meta.round ? `Round ${meta.round}` : "NRL",
     `${cmp.rows.length} priced markets`,
@@ -119,6 +126,23 @@ export default async function HomeModel() {
                     <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{p.team}</span>
                   </span>
                   <span style={{ color: "var(--accent-2)", fontWeight: 800, whiteSpace: "nowrap" }}>{((p.p_anytime ?? 0) * 100).toFixed(0)}%</span>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+
+          {pointScorers.length ? (
+            <div style={{ display: "grid", gap: 6, alignContent: "start" }}>
+              <div style={{ fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>
+                Most projected points
+              </div>
+              {pointScorers.map((p, i) => (
+                <Link key={i} href="/model/predictions" className="card" style={{ padding: ".55rem .8rem", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <b>{p.name}</b>{" "}
+                    <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>{p.team}</span>
+                  </span>
+                  <span style={{ color: "var(--accent-2)", fontWeight: 800, whiteSpace: "nowrap" }}>{(p.exp_points ?? 0).toFixed(1)} pts</span>
                 </Link>
               ))}
             </div>

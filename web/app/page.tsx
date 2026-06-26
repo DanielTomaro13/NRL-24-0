@@ -40,10 +40,16 @@ export default async function Home() {
         {topPicks.length ? <HeroValueTicker picks={topPicks} /> : null}
       </section>
 
-      {/* featured: the statistical model — a point of focus near the top */}
+      {/* featured: the statistical model — the lead focus of the home page */}
       <HomeModel />
 
-      {/* games grid */}
+      {/* ladder + hall of fame + featured (NRL server-rendered, NRLW on toggle) */}
+      <HomeStats initial={initial} />
+
+      {/* home ad — between the stats and the games hub */}
+      <AdUnit slot={AD_SLOTS.home} />
+
+      {/* games grid — moved below the model + stats so odds/predictions lead */}
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>The games</h2>
@@ -60,12 +66,6 @@ export default async function Home() {
           ))}
         </div>
       </section>
-
-      {/* home ad — after the games grid, before stats; never over gameplay */}
-      <AdUnit slot={AD_SLOTS.home} />
-
-      {/* ladder + hall of fame + featured (NRL server-rendered, NRLW on toggle) */}
-      <HomeStats initial={initial} />
     </div>
   );
 }
