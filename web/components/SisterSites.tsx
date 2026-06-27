@@ -9,6 +9,7 @@ const SITES = [
   { key: "football", label: "Football Invincibles", href: "https://footballinvincibles.com" },
   { key: "mlb", label: "MLB 162-0", href: "https://mlb162-0.com" },
   { key: "nba", label: "NBA 82-0", href: "https://nba82-0.com" },
+  { key: "nbl", label: "NBL 33-0", href: "https://nbl33-0.com" },
   { key: "f1", label: "F1 Slam", href: "https://f1slam.com" },
   { key: "tennis", label: "Tennis Slam", href: "https://grandtennisslam.com" },
 ];
