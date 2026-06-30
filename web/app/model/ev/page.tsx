@@ -1,6 +1,7 @@
 import { pageMeta } from "@/lib/seo";
 import { loadCompare } from "@/lib/model.server";
 import EvClient from "@/components/model/EvClient";
+import { NrlOnlyGate } from "@/components/model/modelcomp.client";
 
 export const metadata = pageMeta({
   title: "NRL value bets — model +EV board",
@@ -12,5 +13,5 @@ export const metadata = pageMeta({
 
 export default async function EvPage() {
   const data = await loadCompare();
-  return <EvClient data={data} />;
+  return <NrlOnlyGate><EvClient data={data} /></NrlOnlyGate>;
 }

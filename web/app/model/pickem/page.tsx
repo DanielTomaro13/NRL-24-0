@@ -1,6 +1,7 @@
 import { pageMeta } from "@/lib/seo";
 import { loadPickem } from "@/lib/model.server";
 import PickemClient from "@/components/model/PickemClient";
+import { NrlOnlyGate } from "@/components/model/modelcomp.client";
 
 export const metadata = pageMeta({
   title: "NRL Pick'em model — judge any line, build a parlay",
@@ -12,5 +13,5 @@ export const metadata = pageMeta({
 
 export default async function PickemPage() {
   const data = await loadPickem();
-  return <PickemClient data={data} />;
+  return <NrlOnlyGate><PickemClient data={data} /></NrlOnlyGate>;
 }

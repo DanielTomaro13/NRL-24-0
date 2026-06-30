@@ -1,6 +1,7 @@
 import { pageMeta } from "@/lib/seo";
 import { loadCompare } from "@/lib/model.server";
 import CompareClient from "@/components/model/CompareClient";
+import { NrlOnlyGate } from "@/components/model/modelcomp.client";
 
 export const metadata = pageMeta({
   title: "NRL odds comparison — model fair price vs the bookies",
@@ -12,5 +13,5 @@ export const metadata = pageMeta({
 
 export default async function ComparePage() {
   const data = await loadCompare();
-  return <CompareClient data={data} />;
+  return <NrlOnlyGate><CompareClient data={data} /></NrlOnlyGate>;
 }
