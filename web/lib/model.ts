@@ -8,6 +8,10 @@ export interface ModelMeta {
   round: number | null;
   updated: string;
   generated: string;
+  /** present on per-comp bundles (NRLW / Origin); absent on the legacy men's root */
+  comp?: string;
+  label?: string;
+  provisional_targets?: string[];
 }
 
 export interface PredPlayer {

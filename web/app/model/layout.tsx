@@ -1,9 +1,15 @@
 import Link from "next/link";
 import ModelNav from "@/components/model/ModelNav";
+import { ModelHeaderBar } from "@/components/model/modelcomp.client";
 import { loadModelMeta } from "@/lib/model.server";
+import { MODEL_COMPS, type ModelComp } from "@/lib/modelcomp";
+import type { ModelMeta } from "@/lib/model";
 
 export default async function ModelLayout({ children }: { children: React.ReactNode }) {
-  const meta = await loadModelMeta();
+  const entries = await Promise.all(
+    MODEL_COMPS.map(async (c) => [c.id, await loadModelMeta(c.id)] as const)
+  );
+  const metas = Object.fromEntries(entries) as Partial<Record<ModelComp, ModelMeta>>;
   return (
     <div style={{ display: "grid", gap: "1.25rem" }}>
       <header style={{ display: "grid", gap: 10 }}>
@@ -11,17 +17,13 @@ export default async function ModelLayout({ children }: { children: React.ReactN
           <h1 style={{ fontSize: "2rem", margin: 0, textTransform: "uppercase", fontFamily: "var(--font-cond)" }}>
             <Link href="/model" style={{ color: "var(--text)" }}>The Model</Link>
           </h1>
-          <span className="chip" style={{ color: "var(--gold)" }}>
-            {meta.round ? `Round ${meta.round}` : "NRL"}
-          </span>
-          {meta.updated ? (
-            <span style={{ color: "var(--muted)", fontSize: ".8rem" }}>updated {meta.updated}</span>
-          ) : null}
         </div>
         <p style={{ color: "var(--muted)", margin: 0, maxWidth: "60ch", fontSize: ".95rem" }}>
-          A statistical NRL model: try-scorer, goal-kicking and player-points projections priced
-          against live multi-bookmaker odds to surface value. Educational — not betting advice.
+          A statistical rugby-league model — NRL, NRLW and State of Origin: try-scorer, goal-kicking
+          and player-points projections (plus NRLW match markets) priced to surface value.
+          Educational — not betting advice.
         </p>
+        <ModelHeaderBar metas={metas} />
         <ModelNav />
       </header>
       {children}

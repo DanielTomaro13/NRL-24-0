@@ -6,6 +6,7 @@ const TABS = [
   { href: "/model", label: "Overview" },
   { href: "/model/lineups", label: "Lineups" },
   { href: "/model/predictions", label: "Predictions" },
+  { href: "/model/markets", label: "Match markets" },
   { href: "/model/compare", label: "Compare odds" },
   { href: "/model/ev", label: "Value bets" },
   { href: "/model/pickem", label: "Pick'em" },

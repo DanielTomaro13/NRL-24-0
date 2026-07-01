@@ -1,16 +1,21 @@
 import { pageMeta } from "@/lib/seo";
 import { loadScoring } from "@/lib/model.server";
-import ScoringClient from "@/components/model/ScoringClient";
+import { MODEL_COMPS, type ModelComp } from "@/lib/modelcomp";
+import type { ScoringData } from "@/lib/model";
+import ScoringComp from "@/components/model/ScoringComp";
 
 export const metadata = pageMeta({
-  title: "NRL scoring model — player points & try-scorer value",
+  title: "NRL & NRLW scoring model — player points & try-scorer value",
   description:
-    "Player-points and try-scorer leaders from the model, with the model's fair price next to the best available bookmaker price and the resulting edge.",
+    "Player-points and try-scorer leaders from the model across NRL, NRLW and State of Origin, with the model's fair price next to the best available bookmaker price.",
   path: "/model/scoring",
-  keywords: ["NRL player points", "NRL try scorer odds", "NRL scoring model", "NRL value"],
+  keywords: ["NRL player points", "NRLW try scorer", "NRL scoring model", "NRL value"],
 });
 
 export default async function ScoringPage() {
-  const data = await loadScoring();
-  return <ScoringClient data={data} />;
+  const entries = await Promise.all(
+    MODEL_COMPS.map(async (c) => [c.id, await loadScoring(c.id)] as const)
+  );
+  const byComp = Object.fromEntries(entries) as Partial<Record<ModelComp, ScoringData>>;
+  return <ScoringComp byComp={byComp} />;
 }

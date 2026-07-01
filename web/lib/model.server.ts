@@ -13,24 +13,31 @@ import type {
   ValuePick,
 } from "@/lib/model";
 import type { ScFeed } from "@/lib/supercoach";
+import type { ModelComp, TeamMarket } from "@/lib/modelcomp";
 
-const DIR = join(process.cwd(), "public", "data", "model");
+const ROOT = join(process.cwd(), "public", "data", "model");
 
-async function read<T>(file: string, fallback: T): Promise<T> {
+/** Resolve a comp's bundle dir. Default/undefined and "nrl" read the back-compat
+ * root; other comps read public/data/model/<comp>. */
+function dir(comp?: ModelComp): string {
+  return !comp || comp === "nrl" ? ROOT : join(ROOT, comp);
+}
+
+async function read<T>(file: string, fallback: T, comp?: ModelComp): Promise<T> {
   try {
-    return JSON.parse(await readFile(join(DIR, file), "utf8")) as T;
+    return JSON.parse(await readFile(join(dir(comp), file), "utf8")) as T;
   } catch {
     return fallback;
   }
 }
 
-export const loadModelMeta = () =>
-  read<ModelMeta>("meta.json", { round: null, updated: "", generated: "" });
-export const loadPredictions = () =>
-  read<{ matches: PredMatch[] }>("predictions.json", { matches: [] });
-export const loadCompare = () =>
-  read<CompareData>("compare.json", { generated: "", markets: [], matches: [], rows: [] });
-export const loadPickem = () =>
+export const loadModelMeta = (comp?: ModelComp) =>
+  read<ModelMeta>("meta.json", { round: null, updated: "", generated: "" }, comp);
+export const loadPredictions = (comp?: ModelComp) =>
+  read<{ matches: PredMatch[] }>("predictions.json", { matches: [] }, comp);
+export const loadCompare = (comp?: ModelComp) =>
+  read<CompareData>("compare.json", { generated: "", markets: [], matches: [], rows: [] }, comp);
+export const loadPickem = (comp?: ModelComp) =>
   read<PickemData>("pickem.json", {
     generated: "",
     multipliers: {},
@@ -38,25 +45,28 @@ export const loadPickem = () =>
     stats: [],
     matches: [],
     n_dabble: 0,
-  });
-export const loadScoring = () =>
-  read<ScoringData>("scoring.json", { points: [], tries: [] });
-export const loadLineups = () =>
-  read<{ matches: LineupMatch[] }>("lineups.json", { matches: [] });
-export const loadSuperCoach = () =>
-  read<ScFeed>("supercoach.json", { generated: "", season: 0, round: 0, n_players: 0, players: [] });
-export const loadBacktest = () =>
+  }, comp);
+export const loadScoring = (comp?: ModelComp) =>
+  read<ScoringData>("scoring.json", { points: [], tries: [] }, comp);
+export const loadLineups = (comp?: ModelComp) =>
+  read<{ matches: LineupMatch[] }>("lineups.json", { matches: [] }, comp);
+export const loadSuperCoach = (comp?: ModelComp) =>
+  read<ScFeed>("supercoach.json", { generated: "", season: 0, round: 0, n_players: 0, players: [] }, comp);
+export const loadBacktest = (comp?: ModelComp) =>
   read<BacktestData>("backtest.json", {
     holdouts: [],
     n_test: null,
     tries: null,
     regression: [],
     generated: null,
-  });
+  }, comp);
+/** Match-outcome markets (H2H / line / total) — NRLW only for now. */
+export const loadTeamMarkets = (comp?: ModelComp) =>
+  read<{ matches: TeamMarket[] }>("team.json", { matches: [] }, comp);
 
 /** Top model value markets — real edges only (filters longshot/mismatch noise). */
-export async function loadTopValue(n = 6): Promise<ValuePick[]> {
-  const cmp = await loadCompare();
+export async function loadTopValue(n = 6, comp?: ModelComp): Promise<ValuePick[]> {
+  const cmp = await loadCompare(comp);
   return cmp.rows
     .filter((r) => r.ev != null && r.ev > 0 && r.ev <= 25 && r.best != null)
     .sort((a, b) => (b.ev ?? 0) - (a.ev ?? 0))
