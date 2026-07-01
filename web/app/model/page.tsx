@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
-import { loadCompare, loadPickem, loadPredictions } from "@/lib/model.server";
+import { loadCompare, loadPickem, loadPredictions, loadTeamMarkets } from "@/lib/model.server";
+import { MODEL_COMPS, type ModelComp } from "@/lib/modelcomp";
+import OverviewStats, { type OverviewStat } from "@/components/model/OverviewStats";
 
 export const metadata = pageMeta({
   title: "NRL Model — predictions, odds value & Pick'em edges",
@@ -13,6 +15,7 @@ export const metadata = pageMeta({
 const CARDS = [
   { href: "/model/lineups", title: "Lineups", blurb: "Confirmed team lists for every game this round, with each side's goal kicker flagged." },
   { href: "/model/predictions", title: "Predictions", blurb: "Per-player projected tries, points and kicker points for every game this round." },
+  { href: "/model/markets", title: "Match markets", blurb: "Model-fair head-to-head, line and total for every NRL & NRLW match, with best-book EV when live odds land." },
   { href: "/model/compare", title: "Compare odds", blurb: "Model fair price next to live Sportsbet, Ladbrokes, TAB, PointsBet & Dabble prices — best highlighted." },
   { href: "/model/ev", title: "Value bets", blurb: "Every +EV market ranked by edge, with the book offering it and a suggested Kelly stake." },
   { href: "/model/pickem", title: "Pick'em", blurb: "Type any Dabble line and the model returns P(over), fair odds and a lean — build a parlay slip." },
@@ -30,22 +33,22 @@ const STEPS = [
 ];
 
 export default async function ModelOverview() {
-  const [preds, cmp, pk] = await Promise.all([loadPredictions(), loadCompare(), loadPickem()]);
-  const stats = [
-    { k: "Matches", v: preds.matches.length },
-    { k: "Priced markets", v: cmp.rows.length },
-    { k: "Pick'em rows", v: pk.rows.length },
-  ];
+  // per-comp stats; odds-fed numbers (compare/pick'em) exist for the men's NRL only
+  const [cmp, pk] = await Promise.all([loadCompare(), loadPickem()]);
+  const byComp = {} as Record<ModelComp, OverviewStat[]>;
+  for (const c of MODEL_COMPS) {
+    const [preds, tm] = await Promise.all([loadPredictions(c.id), loadTeamMarkets(c.id)]);
+    byComp[c.id] = [
+      { k: "Matches", v: preds.matches.length },
+      { k: "Match markets", v: tm.matches.length },
+      ...(c.id === "nrl"
+        ? [{ k: "Priced markets", v: cmp.rows.length }, { k: "Pick'em rows", v: pk.rows.length }]
+        : []),
+    ];
+  }
   return (
     <div style={{ display: "grid", gap: "1.25rem" }}>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {stats.map((s) => (
-          <div key={s.k} className="card" style={{ padding: ".7rem 1rem", minWidth: 130 }}>
-            <div style={{ fontSize: "1.5rem", fontWeight: 800, fontFamily: "var(--font-cond)" }}>{s.v}</div>
-            <div style={{ color: "var(--muted)", fontSize: ".8rem" }}>{s.k}</div>
-          </div>
-        ))}
-      </div>
+      <OverviewStats byComp={byComp} />
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))" }}>
         {CARDS.map((c) => (
           <Link key={c.href} href={c.href} className="card" style={{ padding: "1rem", display: "grid", gap: 6 }}>
