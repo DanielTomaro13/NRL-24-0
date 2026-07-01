@@ -20,8 +20,8 @@ export default async function ModelLayout({ children }: { children: React.ReactN
         </div>
         <p style={{ color: "var(--muted)", margin: 0, maxWidth: "60ch", fontSize: ".95rem" }}>
           A statistical rugby-league model — NRL, NRLW and State of Origin: try-scorer, goal-kicking
-          and player-points projections (plus NRLW match markets) priced to surface value.
-          Educational — not betting advice.
+          and player-points projections, plus NRL &amp; NRLW match markets (head-to-head, line,
+          total) priced to surface value. Educational — not betting advice.
         </p>
         <ModelHeaderBar metas={metas} />
         <ModelNav />

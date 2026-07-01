@@ -43,4 +43,12 @@ export interface TeamMarket {
   total_line: number | null;
   fair_over: number | null;
   fair_under: number | null;
+  /** best live book price + EV per side, present when the odds cron priced the
+   *  match (men's NRL only for now — fair-odds-only comps omit these) */
+  book_home?: string; book_home_price?: number; ev_home?: number;
+  book_away?: string; book_away_price?: number; ev_away?: number;
+  book_over?: string; book_over_price?: number; book_total_line?: number; ev_over?: number;
+  book_under?: string; book_under_price?: number; ev_under?: number;
+  book_line?: string; book_line_side?: string; book_line_hcap?: number;
+  book_line_price?: number; ev_line?: number;
 }
