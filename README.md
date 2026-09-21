@@ -2,6 +2,8 @@
 
 > **Status, September 2026:** GitHub Actions are currently paused on this repo, so automated data refreshes and deploys are not running. The data and any live site reflect the last build.
 
+[![Screenshot of the live site](.github/screenshot.png)](https://nrl24-0.com/)
+
 > NRL stats, ladders & addictive rugby-league mini-games. Build an all-time side and chase a perfect 24-0 season.
 > Live at **[nrl24-0.com](https://nrl24-0.com)**.
 
