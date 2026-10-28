@@ -74,6 +74,23 @@ export default function MarketMoverPromo() {
         e.preventDefault();
         dismiss();
       }}
+      onKeyDown={(e) => {
+        if (e.key !== "Tab") return;
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const items = [...dialog.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")];
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || !dialog.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !dialog.contains(active))) {
+          e.preventDefault();
+          first.focus();
+        }
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) dismiss();
       }}
