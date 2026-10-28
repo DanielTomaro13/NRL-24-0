@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+Host: https://nrl24-0.com
+Sitemap: https://nrl24-0.com/sitemap.xml
