@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import SisterSites from "@/components/SisterSites";
+import MarketMoverPromo from "@/components/MarketMoverPromo";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import JsonLd from "@/components/JsonLd";
@@ -97,6 +98,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en-AU">
       <body>
         <SisterSites active="nrl" />
+        <MarketMoverPromo />
         <SiteHeader />
         <main className="container-x" style={{ paddingTop: "1.5rem", minHeight: "60vh" }}>
           {children}
