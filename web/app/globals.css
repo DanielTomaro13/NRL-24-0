@@ -186,6 +186,7 @@ dialog.mm-promo-dialog {
   color: var(--text);
   display: grid;
   place-items: center;
+  place-items: safe center;
   overflow: auto;
 }
 .mm-promo-dialog::backdrop {
@@ -297,6 +298,26 @@ dialog.mm-promo-dialog.is-ios {
   right: 8px;
   width: 48px;
   height: 48px;
+}
+/* iPhone landscape is short. Keep the wide card and 48px taps, and fit the close control on screen. */
+@media (max-height: 520px) {
+  .mm-promo-dialog.is-ios .mm-promo {
+    padding: 1rem 1.15rem 0.9rem;
+    gap: 0.65rem;
+  }
+  .mm-promo-dialog.is-ios .mm-promo-mark {
+    width: 64px;
+    height: 64px;
+  }
+  .mm-promo-dialog.is-ios .mm-promo-title {
+    font-size: 1.85rem;
+  }
+  .mm-promo-dialog.is-ios .mm-promo-copy {
+    font-size: 1.125rem;
+  }
+  .mm-promo-dialog.is-ios .mm-promo-actions {
+    gap: 8px;
+  }
 }
 @media (hover: hover) {
   .mm-promo-close:hover { color: var(--text); background: var(--panel-2); }
